@@ -4,6 +4,7 @@
 #include "../utils/path.h"
 #include "../core/session.h"
 #include "../commands/registry.h"
+#include "../platform/platform.h"
 #include "../../include/config.h"
 #include <string.h>
 #include <stdio.h>
@@ -28,14 +29,56 @@ void cfd_completion_add_word(const char *word) {
         g_extra_words[g_extra_count++] = cfd_strdup(word);
 }
 
+/* ── Sort + dedup helper ──────────────────────────────────────────────── */
+static int str_cmp_pp(const void *a, const void *b) {
+    return strcmp(*(const char **)a, *(const char **)b);
+}
+
+/* Sort results[0..n) in place and remove duplicates. Returns new count. */
+static int sort_dedup(char **results, int n) {
+    if (n <= 1) return n;
+    qsort(results, n, sizeof(char *), str_cmp_pp);
+    int out = 1;
+    for (int i = 1; i < n; i++) {
+        if (strcmp(results[i], results[out-1]) != 0) {
+            results[out++] = results[i];
+        } else {
+            cfd_free(results[i]);
+            results[i] = NULL;
+        }
+    }
+    return out;
+}
+
+/* ── Filename completion with ~ expansion ─────────────────────────────── */
 char **cfd_complete_filenames(const char *prefix, int *count) {
     *count = 0;
     char **results = cfd_malloc(CFD_MAX_COMPLETION * sizeof(char *));
     int n = 0;
 
-    char *dir_part  = cfd_path_dirname(prefix);
-    char *base_part = cfd_path_basename(prefix);
-    const char *dir = (strcmp(dir_part, ".") == 0 && prefix[0] != '.') ? "." : dir_part;
+    /* Expand ~ in prefix */
+    char *expanded_prefix = NULL;
+    if (prefix && prefix[0] == '~') {
+        expanded_prefix = cfd_path_expand_home(prefix);
+    }
+    const char *search_prefix = expanded_prefix ? expanded_prefix : prefix;
+
+    char *dir_part  = cfd_path_dirname(search_prefix);
+    char *base_part = cfd_path_basename(search_prefix);
+    const char *dir = (strcmp(dir_part, ".") == 0 && search_prefix[0] != '.') ? "." : dir_part;
+
+    /* Determine whether to display original (tilde) prefix or expanded */
+    /* For the result, use the original prefix's dir if it had ~ */
+    char orig_dir[CFD_MAX_PATH];
+    if (prefix && prefix[0] == '~') {
+        char *od = cfd_path_dirname(prefix);
+        strncpy(orig_dir, od, sizeof(orig_dir)-1);
+        orig_dir[sizeof(orig_dir)-1] = '\0';
+        cfd_free(od);
+    } else {
+        strncpy(orig_dir, dir, sizeof(orig_dir)-1);
+        orig_dir[sizeof(orig_dir)-1] = '\0';
+    }
 
 #ifdef _WIN32
     char pattern[CFD_MAX_PATH];
@@ -47,8 +90,10 @@ char **cfd_complete_filenames(const char *prefix, int *count) {
             if (strcmp(fd.cFileName, ".") == 0 || strcmp(fd.cFileName, "..") == 0) continue;
             if (strncmp(fd.cFileName, base_part, strlen(base_part)) == 0) {
                 char full[CFD_MAX_PATH];
-                if (strcmp(dir, ".") == 0) snprintf(full, sizeof(full), "%s", fd.cFileName);
-                else snprintf(full, sizeof(full), "%s/%s", dir, fd.cFileName);
+                if (strcmp(orig_dir, ".") == 0)
+                    snprintf(full, sizeof(full), "%s", fd.cFileName);
+                else
+                    snprintf(full, sizeof(full), "%s/%s", orig_dir, fd.cFileName);
                 if (fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
                     char tmp[CFD_MAX_PATH];
                     snprintf(tmp, sizeof(tmp), "%s/", full);
@@ -69,9 +114,18 @@ char **cfd_complete_filenames(const char *prefix, int *count) {
             if (strcmp(ent->d_name, ".") == 0 || strcmp(ent->d_name, "..") == 0) continue;
             if (strncmp(ent->d_name, base_part, strlen(base_part)) == 0) {
                 char full[CFD_MAX_PATH];
-                if (strcmp(dir, ".") == 0) snprintf(full, sizeof(full), "%s", ent->d_name);
-                else snprintf(full, sizeof(full), "%s/%s", dir, ent->d_name);
-                results[n++] = cfd_strdup(full);
+                if (strcmp(orig_dir, ".") == 0)
+                    snprintf(full, sizeof(full), "%s", ent->d_name);
+                else
+                    snprintf(full, sizeof(full), "%s/%s", orig_dir, ent->d_name);
+                /* add trailing slash for directories */
+                char full2[CFD_MAX_PATH + 2];
+                snprintf(full2, sizeof(full2), "%s", full);
+                if (cfd_path_is_dir(full)) {
+                    size_t flen = strlen(full2);
+                    full2[flen] = '/'; full2[flen+1] = '\0';
+                }
+                results[n++] = cfd_strdup(full2);
             }
         }
         closedir(d);
@@ -80,34 +134,94 @@ char **cfd_complete_filenames(const char *prefix, int *count) {
 
     cfd_free(dir_part);
     cfd_free(base_part);
+    cfd_free(expanded_prefix);
+
+    n = sort_dedup(results, n);
     results[n] = NULL;
     *count = n;
     return results;
 }
 
+/* ── Command completion: builtins + PATH executables ─────────────────── */
 char **cfd_complete_commands(cfd_session_t *sess, const char *prefix, int *count) {
     (void)sess;
     *count = 0;
     char **results = cfd_malloc(CFD_MAX_COMPLETION * sizeof(char *));
     int n = 0;
+    size_t plen = strlen(prefix);
 
-    /* Get registered commands */
+    /* Registered builtins */
     int cmd_count = 0;
     const char **cmds = cfd_registry_list_names(&cmd_count);
     if (cmds) {
         for (int i = 0; i < cmd_count && n < CFD_MAX_COMPLETION; i++) {
-            if (strncmp(cmds[i], prefix, strlen(prefix)) == 0)
+            if (strncmp(cmds[i], prefix, plen) == 0)
                 results[n++] = cfd_strdup(cmds[i]);
         }
         cfd_free((void*)cmds);
     }
 
+    /* Executables in PATH */
+    char *path_env = cfd_platform_getenv("PATH");
+    if (path_env) {
+        int ndirs = 0;
+        char **dirs = cfd_path_split_dirs(path_env, &ndirs);
+        cfd_free(path_env);
+        for (int di = 0; di < ndirs && n < CFD_MAX_COMPLETION; di++) {
+#ifdef _WIN32
+            char pattern[CFD_MAX_PATH];
+            snprintf(pattern, sizeof(pattern), "%s\\*", dirs[di]);
+            WIN32_FIND_DATAA fd2;
+            HANDLE hf2 = FindFirstFileA(pattern, &fd2);
+            if (hf2 != INVALID_HANDLE_VALUE) {
+                do {
+                    if (strcmp(fd2.cFileName, ".") == 0 ||
+                        strcmp(fd2.cFileName, "..") == 0) continue;
+                    /* strip .exe/.cmd for display */
+                    char name[CFD_MAX_PATH];
+                    strncpy(name, fd2.cFileName, sizeof(name)-1);
+                    name[sizeof(name)-1] = '\0';
+                    size_t nlen = strlen(name);
+                    if (nlen > 4 && _stricmp(name + nlen - 4, ".exe") == 0)
+                        name[nlen-4] = '\0';
+                    else if (nlen > 4 && _stricmp(name + nlen - 4, ".cmd") == 0)
+                        name[nlen-4] = '\0';
+                    else if (nlen > 4 && _stricmp(name + nlen - 4, ".bat") == 0)
+                        name[nlen-4] = '\0';
+                    else
+                        continue; /* skip non-executable files */
+                    if (strncmp(name, prefix, plen) == 0 && n < CFD_MAX_COMPLETION)
+                        results[n++] = cfd_strdup(name);
+                } while (FindNextFileA(hf2, &fd2) && n < CFD_MAX_COMPLETION);
+                FindClose(hf2);
+            }
+#else
+            DIR *d2 = opendir(dirs[di]);
+            if (d2) {
+                struct dirent *ent;
+                while ((ent = readdir(d2)) && n < CFD_MAX_COMPLETION) {
+                    if (strncmp(ent->d_name, prefix, plen) == 0) {
+                        char full[CFD_MAX_PATH];
+                        snprintf(full, sizeof(full), "%s/%s", dirs[di], ent->d_name);
+                        /* check executable */
+                        if (access(full, X_OK) == 0)
+                            results[n++] = cfd_strdup(ent->d_name);
+                    }
+                }
+                closedir(d2);
+            }
+#endif
+        }
+        cfd_strfreev(dirs);
+    }
+
     /* Extra words */
     for (int i = 0; i < g_extra_count && n < CFD_MAX_COMPLETION; i++) {
-        if (strncmp(g_extra_words[i], prefix, strlen(prefix)) == 0)
+        if (strncmp(g_extra_words[i], prefix, plen) == 0)
             results[n++] = cfd_strdup(g_extra_words[i]);
     }
 
+    n = sort_dedup(results, n);
     results[n] = NULL;
     *count = n;
     return results;
@@ -124,6 +238,7 @@ cfd_completion_result_t cfd_completion_get(cfd_session_t *sess,
     char word[CFD_MAX_INPUT];
     int wlen = cursor - start;
     if (wlen < 0) wlen = 0;
+    if (wlen >= CFD_MAX_INPUT) wlen = CFD_MAX_INPUT - 1;
     strncpy(word, line + start, wlen);
     word[wlen] = '\0';
 

@@ -16,6 +16,19 @@ static DWORD g_orig_out_mode = 0;
 static HANDLE g_hin  = INVALID_HANDLE_VALUE;
 static HANDLE g_hout = INVALID_HANDLE_VALUE;
 
+/* Global child process handle for Ctrl+C forwarding */
+static HANDLE g_child_process = INVALID_HANDLE_VALUE;
+
+BOOL WINAPI cfd_ctrl_handler(DWORD ctrl_type) {
+    if (ctrl_type == CTRL_C_EVENT || ctrl_type == CTRL_BREAK_EVENT) {
+        if (g_child_process != INVALID_HANDLE_VALUE) {
+            GenerateConsoleCtrlEvent(CTRL_C_EVENT, 0);
+            return TRUE;
+        }
+    }
+    return FALSE;
+}
+
 void win32_enable_virtual_terminal(void) {
     g_hout = GetStdHandle(STD_OUTPUT_HANDLE);
     g_hin  = GetStdHandle(STD_INPUT_HANDLE);
@@ -31,6 +44,7 @@ void win32_enable_virtual_terminal(void) {
         GetConsoleMode(g_hin, &mode);
         g_orig_in_mode = mode;
     }
+    SetConsoleCtrlHandler(cfd_ctrl_handler, TRUE);
 }
 
 DWORD win32_get_console_mode(HANDLE h) {
@@ -55,6 +69,8 @@ int cfd_platform_raw_mode_enter(void) {
     if (h == INVALID_HANDLE_VALUE) return -1;
     DWORD mode;
     GetConsoleMode(h, &mode);
+    /* Save current mode each time so we can restore correctly */
+    g_orig_in_mode = mode;
     mode &= ~(ENABLE_LINE_INPUT | ENABLE_ECHO_INPUT | ENABLE_PROCESSED_INPUT);
     mode |= ENABLE_VIRTUAL_TERMINAL_INPUT;
     SetConsoleMode(h, mode);
@@ -101,22 +117,62 @@ int cfd_platform_get_pid(void) {
 
 int cfd_platform_run_program(const char *path, char **argv, char **envp) {
     (void)envp;
-    /* Build command line */
-    char cmdline[4096] = {0};
+    /* Build command line with proper quoting for args that contain spaces */
+    char cmdline[8192] = {0};
+    int pos = 0;
     for (int i = 0; argv && argv[i]; i++) {
-        if (i > 0) strcat(cmdline, " ");
-        strcat(cmdline, argv[i]);
+        if (i > 0) { cmdline[pos++] = ' '; }
+        const char *arg = argv[i];
+        int needs_quote = 0;
+        for (const char *c = arg; *c; c++) {
+            if (*c == ' ' || *c == '\t' || *c == '"') { needs_quote = 1; break; }
+        }
+        if (needs_quote) {
+            cmdline[pos++] = '"';
+            for (const char *c = arg; *c; c++) {
+                if (*c == '"') cmdline[pos++] = '\\';
+                cmdline[pos++] = *c;
+                if (pos >= (int)sizeof(cmdline) - 4) break;
+            }
+            cmdline[pos++] = '"';
+        } else {
+            int len = (int)strlen(arg);
+            if (pos + len >= (int)sizeof(cmdline) - 2) break;
+            memcpy(cmdline + pos, arg, len);
+            pos += len;
+        }
     }
+    cmdline[pos] = '\0';
+
+    /* Exit raw mode before running child so stdin is in cooked mode for child */
+    cfd_platform_raw_mode_exit();
+
     STARTUPINFOA si = {0};
     si.cb = sizeof(si);
+    si.dwFlags = STARTF_USESTDHANDLES;
+    si.hStdInput  = GetStdHandle(STD_INPUT_HANDLE);
+    si.hStdOutput = GetStdHandle(STD_OUTPUT_HANDLE);
+    si.hStdError  = GetStdHandle(STD_ERROR_HANDLE);
+
     PROCESS_INFORMATION pi = {0};
-    if (!CreateProcessA(path, cmdline, NULL, NULL, FALSE,
-                        0, NULL, NULL, &si, &pi)) return -1;
+    if (!CreateProcessA(path, cmdline, NULL, NULL, TRUE /*bInheritHandles*/,
+                        0, NULL, NULL, &si, &pi)) {
+        return -1;
+    }
+
+    /* Track child so Ctrl+C is forwarded */
+    g_child_process = pi.hProcess;
     WaitForSingleObject(pi.hProcess, INFINITE);
+    g_child_process = INVALID_HANDLE_VALUE;
+
     DWORD code = 0;
     GetExitCodeProcess(pi.hProcess, &code);
     CloseHandle(pi.hProcess);
     CloseHandle(pi.hThread);
+
+    /* Restore ANSI/VT mode in case the child changed it */
+    cfd_platform_enable_ansi();
+
     return (int)code;
 }
 

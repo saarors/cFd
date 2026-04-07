@@ -13,6 +13,23 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
+#ifdef _WIN32
+#  include <io.h>
+#  define CFD_DUP(fd)         _dup(fd)
+#  define CFD_DUP2(fd,fd2)    _dup2(fd,fd2)
+#  define CFD_CLOSE(fd)       _close(fd)
+#  define CFD_PIPE(fds,sz,fl) _pipe(fds,sz,fl)
+#else
+#  include <unistd.h>
+#  define CFD_DUP(fd)         dup(fd)
+#  define CFD_DUP2(fd,fd2)    dup2(fd,fd2)
+#  define CFD_CLOSE(fd)       close(fd)
+static inline int cfd_unix_pipe(int fds[2]) { return pipe(fds); }
+#  define CFD_PIPE(fds,sz,fl) cfd_unix_pipe(fds)
+#endif
+#ifdef _WIN32
+#  include <fcntl.h>
+#endif
 
 /* Find external program in PATH */
 static char *find_in_path(const char *name) {
@@ -121,33 +138,75 @@ int cfd_dispatch_cmd(cfd_session_t *sess, int argc, char **argv) {
 
 int cfd_dispatch_pipeline(cfd_session_t *sess, cfd_ast_node_t **nodes, int count) {
     if (count == 1) return cfd_dispatch(sess, nodes[0]);
-    /* Simple sequential pipeline: use popen-style temp files */
+
+    /* Save original stdin/stdout file descriptors */
+    int saved_stdin  = CFD_DUP(0);
+    int saved_stdout = CFD_DUP(1);
+    if (saved_stdin < 0 || saved_stdout < 0) {
+        /* fallback: run sequentially without pipes */
+        int ret = 0;
+        for (int i = 0; i < count; i++) ret = cfd_dispatch(sess, nodes[i]);
+        return ret;
+    }
+
     int ret = 0;
-    char *prev_out = NULL;
+    int prev_read = -1; /* read end of the previous pipe */
+
     for (int i = 0; i < count; i++) {
-        if (prev_out) {
-            /* redirect stdin from prev_out */
-            freopen(prev_out, "r", stdin);
-            cfd_free(prev_out); prev_out = NULL;
+        int pipefd[2] = {-1, -1};
+        int need_pipe = (i < count - 1);
+
+        if (need_pipe) {
+#ifdef _WIN32
+            if (CFD_PIPE(pipefd, 65536, _O_BINARY) != 0) {
+                /* can't create pipe; abort */
+                break;
+            }
+#else
+            if (CFD_PIPE(pipefd, 0, 0) != 0) {
+                break;
+            }
+#endif
         }
-        if (i < count - 1) {
-            /* redirect stdout to temp file */
-            char tmp[64];
-            snprintf(tmp, sizeof(tmp), "cfd_pipe_%d.tmp", i);
-            prev_out = cfd_strdup(tmp);
-            freopen(tmp, "w", stdout);
+
+        /* Set stdin from previous pipe's read end */
+        if (prev_read >= 0) {
+            CFD_DUP2(prev_read, 0);
+            CFD_CLOSE(prev_read);
+            prev_read = -1;
+        } else if (i > 0) {
+            /* restore stdin for first stage already handled above */
         }
+
+        /* Set stdout to current pipe's write end */
+        if (need_pipe) {
+            CFD_DUP2(pipefd[1], 1);
+            CFD_CLOSE(pipefd[1]);
+            prev_read = pipefd[0];
+        }
+
+        fflush(stdout);
         ret = cfd_dispatch(sess, nodes[i]);
         fflush(stdout);
+
+        /* Restore stdout for next iteration (or final) */
+        CFD_DUP2(saved_stdout, 1);
+
+        /* Restore stdin for next iteration */
+        if (i < count - 1 && prev_read < 0) {
+            /* already consumed */
+        }
     }
-    /* restore stdio */
-#ifdef _WIN32
-    freopen("CON", "r", stdin);
-    freopen("CON", "w", stdout);
-#else
-    freopen("/dev/tty", "r", stdin);
-    freopen("/dev/tty", "w", stdout);
-#endif
+
+    /* If there's a leftover pipe read end, close it */
+    if (prev_read >= 0) CFD_CLOSE(prev_read);
+
+    /* Restore original stdin/stdout */
+    CFD_DUP2(saved_stdin,  0);
+    CFD_DUP2(saved_stdout, 1);
+    CFD_CLOSE(saved_stdin);
+    CFD_CLOSE(saved_stdout);
+
     return ret;
 }
 

@@ -16,6 +16,11 @@ typedef struct cfd_readline {
     char         kill_ring[CFD_MAX_INPUT]; /* for Ctrl-K / Ctrl-Y */
     char         search_buf[CFD_MAX_INPUT];
     int          search_mode;
+    int          search_hist_idx;          /* for Ctrl+R: current history position */
+    char         search_orig_buf[CFD_MAX_INPUT]; /* saved buf before search */
+    int          search_orig_len;
+    int          search_orig_cursor;
+    char         suggest_buf[CFD_MAX_INPUT];    /* auto-suggest ghost text */
 } cfd_readline_t;
 
 cfd_readline_t *cfd_readline_new(cfd_session_t *sess, cfd_history_t *history);

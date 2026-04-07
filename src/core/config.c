@@ -15,7 +15,7 @@ cfd_config_t *g_config = NULL;
 
 cfd_config_t *cfd_config_new(void) {
     cfd_config_t *cfg = CFD_NEW(cfd_config_t);
-    strncpy(cfg->prompt_format, "\\u@\\h \\w> ", sizeof(cfg->prompt_format)-1);
+    strncpy(cfg->prompt_format, "\\e\\u@\\h \\w\\$ ", sizeof(cfg->prompt_format)-1);
     strncpy(cfg->theme, CFD_THEME_DEFAULT, sizeof(cfg->theme)-1);
     cfg->color_enabled      = true;
     cfg->history_enabled    = true;
