@@ -1,0 +1,79 @@
+#include "registry.h"
+#include "builtin/fs/cmd_ls.h"
+#include "builtin/fs/cmd_cd.h"
+#include "builtin/fs/cmd_pwd.h"
+#include "builtin/fs/cmd_mkdir.h"
+#include "builtin/fs/cmd_rmdir.h"
+#include "builtin/fs/cmd_rm.h"
+#include "builtin/fs/cmd_cp.h"
+#include "builtin/fs/cmd_mv.h"
+#include "builtin/fs/cmd_cat.h"
+#include "builtin/fs/cmd_touch.h"
+#include "builtin/fs/cmd_stat.h"
+#include "builtin/fs/cmd_find.h"
+#include "builtin/text/cmd_echo.h"
+#include "builtin/text/cmd_grep.h"
+#include "builtin/text/cmd_wc.h"
+#include "builtin/text/cmd_sort.h"
+#include "builtin/text/cmd_head.h"
+#include "builtin/text/cmd_tail.h"
+#include "builtin/text/cmd_cut.h"
+#include "builtin/text/cmd_tr.h"
+#include "builtin/sys/cmd_env.h"
+#include "builtin/sys/cmd_set.h"
+#include "builtin/sys/cmd_unset.h"
+#include "builtin/sys/cmd_date.h"
+#include "builtin/sys/cmd_clear.h"
+#include "builtin/sys/cmd_exit.h"
+#include "builtin/sys/cmd_alias.h"
+#include "builtin/sys/cmd_version.h"
+#include "builtin/sys/cmd_help.h"
+#include "builtin/process/cmd_exec.h"
+#include "builtin/process/cmd_ps.h"
+#include "builtin/process/cmd_kill.h"
+#include "builtin/process/cmd_jobs.h"
+#include "builtin/process/cmd_bg.h"
+#include "builtin/process/cmd_fg.h"
+
+void cfd_register_all_builtins(cfd_registry_t *reg) {
+    /* filesystem */
+    cfd_registry_register(reg, &builtin_ls);
+    cfd_registry_register(reg, &builtin_cd);
+    cfd_registry_register(reg, &builtin_pwd);
+    cfd_registry_register(reg, &builtin_mkdir);
+    cfd_registry_register(reg, &builtin_rmdir);
+    cfd_registry_register(reg, &builtin_rm);
+    cfd_registry_register(reg, &builtin_cp);
+    cfd_registry_register(reg, &builtin_mv);
+    cfd_registry_register(reg, &builtin_cat);
+    cfd_registry_register(reg, &builtin_touch);
+    cfd_registry_register(reg, &builtin_stat);
+    cfd_registry_register(reg, &builtin_find);
+    /* text */
+    cfd_registry_register(reg, &builtin_echo);
+    cfd_registry_register(reg, &builtin_grep);
+    cfd_registry_register(reg, &builtin_wc);
+    cfd_registry_register(reg, &builtin_sort);
+    cfd_registry_register(reg, &builtin_head);
+    cfd_registry_register(reg, &builtin_tail);
+    cfd_registry_register(reg, &builtin_cut);
+    cfd_registry_register(reg, &builtin_tr);
+    /* system */
+    cfd_registry_register(reg, &builtin_env);
+    cfd_registry_register(reg, &builtin_set);
+    cfd_registry_register(reg, &builtin_unset);
+    cfd_registry_register(reg, &builtin_date);
+    cfd_registry_register(reg, &builtin_clear);
+    cfd_registry_register(reg, &builtin_exit);
+    cfd_registry_register(reg, &builtin_alias);
+    cfd_registry_register(reg, &builtin_unalias);
+    cfd_registry_register(reg, &builtin_version);
+    cfd_registry_register(reg, &builtin_help);
+    /* process */
+    cfd_registry_register(reg, &builtin_exec);
+    cfd_registry_register(reg, &builtin_ps);
+    cfd_registry_register(reg, &builtin_kill);
+    cfd_registry_register(reg, &builtin_jobs);
+    cfd_registry_register(reg, &builtin_bg);
+    cfd_registry_register(reg, &builtin_fg);
+}
