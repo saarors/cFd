@@ -11,7 +11,7 @@ LDFLAGS =
 ifeq ($(OS),Windows_NT)
   EXE     = .exe
   CFLAGS += -D_WIN32
-  LDFLAGS += -lshlwapi
+  LDFLAGS += -lshlwapi -lwinhttp
 else
   EXE     =
   LDFLAGS += -lm
