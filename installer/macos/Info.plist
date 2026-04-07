@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+  "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <!-- Bundle identity -->
+    <key>CFBundleIdentifier</key>
+    <string>com.saarors.cfd</string>
+
+    <key>CFBundleName</key>
+    <string>cFd</string>
+
+    <key>CFBundleDisplayName</key>
+    <string>cFd Terminal</string>
+
+    <!-- Executable inside Contents/MacOS/ -->
+    <key>CFBundleExecutable</key>
+    <string>cFd</string>
+
+    <!-- Version -->
+    <key>CFBundleVersion</key>
+    <string>1.0.0</string>
+
+    <key>CFBundleShortVersionString</key>
+    <string>1.0.0</string>
+
+    <!-- Type: application bundle -->
+    <key>CFBundlePackageType</key>
+    <string>APPL</string>
+
+    <key>CFBundleSignature</key>
+    <string>????</string>
+
+    <!-- Icon file (Resources/cFd.icns) -->
+    <key>CFBundleIconFile</key>
+    <string>cFd</string>
+
+    <!-- Minimum macOS version: 10.13 High Sierra -->
+    <key>LSMinimumSystemVersion</key>
+    <string>10.13</string>
+
+    <!-- This is a command-line app launched in Terminal -->
+    <key>LSUIElement</key>
+    <false/>
+
+    <!-- Open in Terminal.app -->
+    <key>CFBundleDocumentTypes</key>
+    <array>
+        <dict>
+            <key>CFBundleTypeExtensions</key>
+            <array>
+                <string>cfd</string>
+            </array>
+            <key>CFBundleTypeName</key>
+            <string>cFd Script</string>
+            <key>CFBundleTypeRole</key>
+            <string>Shell</string>
+        </dict>
+    </array>
+
+    <!-- URL scheme: cfd:// -->
+    <key>CFBundleURLTypes</key>
+    <array>
+        <dict>
+            <key>CFBundleURLName</key>
+            <string>cFd URL</string>
+            <key>CFBundleURLSchemes</key>
+            <array>
+                <string>cfd</string>
+            </array>
+        </dict>
+    </array>
+
+    <!-- Privacy: no special entitlements needed -->
+    <key>NSHighResolutionCapable</key>
+    <true/>
+
+    <!-- Copyright -->
+    <key>NSHumanReadableCopyright</key>
+    <string>MIT License — github.com/saarors/cFd</string>
+</dict>
+</plist>

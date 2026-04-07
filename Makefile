@@ -184,7 +184,7 @@ OBJ_TESTS = $(ALL_LIB_SRC:.c=.o) $(SRC_TESTS:.c=.o)
 # Targets
 # -------------------------------------------------------
 
-.PHONY: all clean tests install
+.PHONY: all clean tests install installer-win installer-nsis installer-mac
 
 all: $(TARGET)
 
@@ -210,3 +210,20 @@ clean:
 install: $(TARGET)
 	cp $(TARGET) /usr/local/bin/cfd
 	@echo "Installed to /usr/local/bin/cfd"
+
+# ── Windows MSI (requires WiX Toolset 3 — https://wixtoolset.org) ──────────
+installer-win: $(TARGET)
+	@mkdir -p build
+	candle installer/windows/cfd.wxs -o build/cfd.wixobj
+	light  build/cfd.wixobj -ext WixUIExtension -o build/cFd-1.0.0-windows.msi
+	@echo "MSI: build/cFd-1.0.0-windows.msi"
+
+# ── Windows NSIS Setup EXE (requires NSIS — https://nsis.sourceforge.io) ───
+installer-nsis: $(TARGET)
+	@mkdir -p build
+	makensis installer/windows/cfd.nsi
+	@echo "Setup: build/cFd-setup-1.0.0.exe"
+
+# ── macOS .app + DMG ────────────────────────────────────────────────────────
+installer-mac:
+	@bash installer/macos/build_app.sh

@@ -1,0 +1,242 @@
+name: Build & Release
+
+on:
+  push:
+    tags:
+      - "v*.*.*"          # trigger on  git tag v1.0.0  +  git push --tags
+  workflow_dispatch:       # allow manual run from GitHub Actions UI
+
+permissions:
+  contents: write          # needed to create GitHub Release & upload assets
+
+jobs:
+# ────────────────────────────────────────────────────────────────────────────
+#  Windows — MSI + NSIS installer
+# ────────────────────────────────────────────────────────────────────────────
+  build-windows:
+    name: Windows (MSI + Setup EXE)
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # Install MinGW / GCC via Scoop (already on windows-latest as GCC 13+)
+      - name: Build cfd.exe (release)
+        shell: cmd
+        run: |
+          mingw32-make CFLAGS="-std=c11 -O2 -Iinclude -Isrc -D_POSIX_C_SOURCE=200809L -D_WIN32" ^
+                       LDFLAGS="-lshlwapi -lwinhttp"
+          if not exist cfd.exe exit /b 1
+
+      # ── MSI via WiX Toolset 3 ──────────────────────────────────────────
+      - name: Install WiX Toolset 3
+        shell: pwsh
+        run: |
+          $url = "https://github.com/wixtoolset/wix3/releases/download/wix3112rtm/wix311.exe"
+          Invoke-WebRequest $url -OutFile wix_setup.exe
+          Start-Process wix_setup.exe -ArgumentList "/quiet" -Wait
+          echo "C:\Program Files (x86)\WiX Toolset v3.11\bin" | `
+            Out-File -Append -FilePath $env:GITHUB_PATH
+
+      - name: Create minimal license.rtf for WiX
+        shell: pwsh
+        run: |
+          $rtf = "{\rtf1\ansi MIT License\par github.com/saarors/cFd\par }"
+          Set-Content installer\windows\license.rtf $rtf
+
+      - name: Build MSI
+        shell: cmd
+        run: |
+          mkdir build 2>NUL
+          candle installer\windows\cfd.wxs -o build\cfd.wixobj
+          light  build\cfd.wixobj -ext WixUIExtension ^
+                 -o build\cFd-${{ github.ref_name }}-windows.msi
+
+      # ── NSIS Setup EXE ────────────────────────────────────────────────
+      - name: Install NSIS
+        shell: pwsh
+        run: |
+          $url = "https://nsis.sourceforge.io/mediawiki/images/c/c9/Nsis-3.09-setup.exe"
+          Invoke-WebRequest $url -OutFile nsis_setup.exe
+          Start-Process nsis_setup.exe -ArgumentList "/S" -Wait
+          echo "C:\Program Files (x86)\NSIS" | `
+            Out-File -Append -FilePath $env:GITHUB_PATH
+
+      - name: Download NSIS EnvVarUpdate plugin
+        shell: pwsh
+        run: |
+          $url = "https://nsis.sourceforge.net/mediawiki/images/7/7f/EnvVarUpdate.7z"
+          # Fallback: write a minimal stub so NSIS compiles even without the plugin
+          $stub = @'
+          !macro EnvVarUpdate OUTVAR NAME ACTION REGROOT VALUE
+            ; stub — PATH update skipped in CI
+          !macroend
+          !define EnvVarUpdate "!insertmacro EnvVarUpdate"
+          !macro un.EnvVarUpdate OUTVAR NAME ACTION REGROOT VALUE
+          !macroend
+          !define un.EnvVarUpdate "!insertmacro un.EnvVarUpdate"
+          '@
+          $nsis_inc = "C:\Program Files (x86)\NSIS\Include"
+          Set-Content "$nsis_inc\EnvVarUpdate.nsh" $stub
+
+      - name: Build NSIS installer
+        shell: cmd
+        run: |
+          mkdir build 2>NUL
+          makensis /DAPP_VERSION=${{ github.ref_name }} ^
+                   /DOUTFILE="build\cFd-${{ github.ref_name }}-setup.exe" ^
+                   installer\windows\cfd.nsi
+
+      - name: Upload Windows artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-installers
+          path: |
+            build/*.msi
+            build/*-setup.exe
+          if-no-files-found: warn
+
+# ────────────────────────────────────────────────────────────────────────────
+#  macOS — .app bundle + DMG
+# ────────────────────────────────────────────────────────────────────────────
+  build-macos:
+    name: macOS (App Bundle + DMG)
+    runs-on: macos-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: brew install gcc make 2>/dev/null || true
+
+      - name: Build cFd (release)
+        run: |
+          make clean
+          make CFLAGS="-std=c11 -O2 -Iinclude -Isrc -D_POSIX_C_SOURCE=200809L" \
+               LDFLAGS="-lm"
+          test -f cfd
+
+      - name: Build .app bundle + DMG
+        run: bash installer/macos/build_app.sh
+
+      - name: Rename outputs with version tag
+        run: |
+          cd build
+          TAG=${{ github.ref_name }}
+          mv cFd.app "cFd-${TAG}-macos.app" 2>/dev/null || true
+          mv cFd-*.dmg          "cFd-${TAG}-macos.dmg"          2>/dev/null || true
+          mv cFd-*-macos.tar.gz "cFd-${TAG}-macos.tar.gz"       2>/dev/null || true
+
+      - name: Upload macOS artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-installers
+          path: |
+            build/*.dmg
+            build/*.tar.gz
+          if-no-files-found: warn
+
+# ────────────────────────────────────────────────────────────────────────────
+#  Linux — standalone binary tarball
+# ────────────────────────────────────────────────────────────────────────────
+  build-linux:
+    name: Linux (Binary Tarball)
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install GCC
+        run: sudo apt-get install -y gcc make
+
+      - name: Build cFd (release)
+        run: |
+          make clean
+          make CFLAGS="-std=c11 -O2 -Iinclude -Isrc -D_POSIX_C_SOURCE=200809L" \
+               LDFLAGS="-lm"
+          test -f cfd
+
+      - name: Package tarball
+        run: |
+          TAG=${{ github.ref_name }}
+          mkdir -p build
+          strip cfd
+          tar -czf "build/cFd-${TAG}-linux-x86_64.tar.gz" cfd
+          echo "Contents:"
+          ls -lh build/
+
+      - name: Upload Linux artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-binary
+          path: build/*.tar.gz
+
+# ────────────────────────────────────────────────────────────────────────────
+#  Create GitHub Release and attach all assets
+# ────────────────────────────────────────────────────────────────────────────
+  release:
+    name: Publish GitHub Release
+    needs: [build-windows, build-macos, build-linux]
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: dist/
+
+      - name: List all release assets
+        run: find dist/ -type f | sort
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: "cFd ${{ github.ref_name }}"
+          tag_name: ${{ github.ref_name }}
+          draft: false
+          prerelease: false
+          body: |
+            ## cFd ${{ github.ref_name }}
+
+            A fully custom terminal shell written in C.
+
+            ### Downloads
+
+            | Platform | File | Notes |
+            |----------|------|-------|
+            | Windows  | `cFd-*-windows.msi` | MSI installer — installs to Program Files, adds to PATH |
+            | Windows  | `cFd-*-setup.exe`   | Classic setup wizard (no WiX needed) |
+            | macOS    | `cFd-*-macos.dmg`   | Drag `cFd.app` to `/Applications` |
+            | macOS    | `cFd-*-macos.tar.gz`| Archive with `cFd.app` |
+            | Linux    | `cFd-*-linux-x86_64.tar.gz` | Standalone binary |
+
+            ### What's included
+            - 70+ built-in commands
+            - Syntax highlighting, auto-suggest, Ctrl+R search
+            - Real pipes, I/O redirection
+            - Package manager (`pkg install git`)
+            - Built-in `nano` text editor
+            - `curl`, `wget`, `md5`, `sha256`, `calc`, and more
+
+            ### Quick start
+            ```sh
+            # Windows — after MSI install, open a new terminal:
+            cfd
+
+            # macOS / Linux:
+            ./cfd
+            ```
+
+            ### Build from source
+            ```sh
+            git clone https://github.com/saarors/cFd
+            cd cFd && make && ./cfd
+            ```
+          files: |
+            dist/**/*.msi
+            dist/**/*-setup.exe
+            dist/**/*.dmg
+            dist/**/*.tar.gz
