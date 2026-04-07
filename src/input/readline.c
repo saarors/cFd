@@ -83,7 +83,6 @@ static void rl_handle_tab(cfd_readline_t *rl, const char *prompt) {
         /* complete the word */
         int start = rl->cursor;
         while (start > 0 && rl->buf[start-1] != ' ' && rl->buf[start-1] != '\t') start--;
-        int wlen = cr.common_prefix_len;
         char *match = cr.matches[0];
         /* replace word from start to cursor with match */
         int match_len = (int)strlen(match);
@@ -101,7 +100,6 @@ static void rl_handle_tab(cfd_readline_t *rl, const char *prompt) {
             if ((i + 1) % 4 == 0 || i == cr.count - 1) printf("\n");
         }
         rl_refresh(rl, prompt);
-        (void)wlen;
     }
     cfd_completion_result_free(&cr);
 }

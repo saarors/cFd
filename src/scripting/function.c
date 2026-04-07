@@ -2,6 +2,7 @@
 #include "../utils/mem.h"
 #include "../core/session.h"
 #include <string.h>
+#include <stdio.h>
 
 static void func_free(void *p) {
     if (!p) return;

@@ -1,6 +1,7 @@
 #include "parser.h"
 #include "../utils/mem.h"
 #include "../utils/str_utils.h"
+#include "../../include/config.h"
 #include <string.h>
 #include <stdio.h>
 

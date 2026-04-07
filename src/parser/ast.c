@@ -2,11 +2,6 @@
 #include "../utils/mem.h"
 #include <string.h>
 
-static cfd_ast_node_t *ast_new(cfd_ast_type_t type) {
-    return CFD_NEW(cfd_ast_node_t);
-    /* type set by caller */
-    (void)type;
-}
 
 cfd_ast_node_t *cfd_ast_cmd(char **argv, int argc) {
     cfd_ast_node_t *n = CFD_NEW(cfd_ast_node_t);

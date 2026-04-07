@@ -1,6 +1,7 @@
 #include "lexer.h"
 #include "../utils/mem.h"
 #include "../utils/str_utils.h"
+#include "../../include/config.h"
 #include <string.h>
 #include <ctype.h>
 #include <stdbool.h>
@@ -24,10 +25,6 @@ static char peek(cfd_lexer_t *l) {
     return l->src[l->pos];
 }
 
-static char peek2(cfd_lexer_t *l) {
-    if (l->pos + 1 >= l->len) return '\0';
-    return l->src[l->pos + 1];
-}
 
 static char advance(cfd_lexer_t *l) {
     char c = l->src[l->pos++];

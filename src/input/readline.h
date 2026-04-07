@@ -2,6 +2,7 @@
 #define CFD_READLINE_H
 
 #include "../../include/types.h"
+#include "../../include/config.h"
 #include "history.h"
 #include "completion.h"
 #include <stddef.h>

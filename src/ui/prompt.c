@@ -10,6 +10,11 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#ifdef _WIN32
+#  include <windows.h>
+#else
+#  include <unistd.h>
+#endif
 
 static char g_prompt_fmt[CFD_MAX_PROMPT] = "\\u@\\h \\w> ";
 

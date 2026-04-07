@@ -1,8 +1,10 @@
 #include "redirect.h"
+#include "../parser/token.h"
 #include "../utils/mem.h"
 #include <string.h>
 #include <stdio.h>
 #include <fcntl.h>
+#include <sys/stat.h>
 
 #ifdef _WIN32
 #  include <io.h>
@@ -15,8 +17,10 @@
 #  define O_CREAT  _O_CREAT
 #  define O_TRUNC  _O_TRUNC
 #  define O_APPEND _O_APPEND
-#  define S_IRUSR  _S_IREAD
-#  define S_IWUSR  _S_IWRITE
+#  ifndef S_IRUSR
+#    define S_IRUSR  _S_IREAD
+#    define S_IWUSR  _S_IWRITE
+#  endif
 #  ifndef O_BINARY
 #    define O_BINARY _O_BINARY
 #  endif
