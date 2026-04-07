@@ -48,8 +48,9 @@ jobs:
         shell: cmd
         run: |
           mkdir build 2>NUL
-          candle installer\windows\cfd.wxs -o build\cfd.wixobj
+          candle -arch x64 installer\windows\cfd.wxs -o build\cfd.wixobj
           light  build\cfd.wixobj -ext WixUIExtension ^
+                 -b installer\windows ^
                  -o build\cFd-${{ github.ref_name }}-windows.msi
 
       # ── NSIS Setup EXE ────────────────────────────────────────────────

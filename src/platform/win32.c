@@ -206,11 +206,33 @@ int cfd_platform_unsetenv(const char *name) {
     return _putenv_s(name, "");
 }
 
+/* Build a char** snapshot from the Windows environment block.
+   We avoid _environ entirely because newer MinGW/UCRT builds export it
+   as an import symbol (__imp__environ) that may be missing from the
+   import library, causing a linker error. GetEnvironmentStrings() is
+   the correct Win32 API and works on every Windows version. */
+static char **g_env_cache = NULL;
+
 char **cfd_platform_environ(void) {
-    /* _environ is declared in <stdlib.h> but some MinGW builds need an
-       explicit extern to avoid the __imp__environ linker error. */
-    extern char **_environ;
-    return _environ;
+    if (g_env_cache) return g_env_cache;
+
+    LPCH block = GetEnvironmentStrings();
+    if (!block) return NULL;
+
+    /* count entries */
+    int count = 0;
+    for (LPCH p = block; *p; p += strlen(p) + 1) count++;
+
+    g_env_cache = (char **)malloc((count + 1) * sizeof(char *));
+    if (!g_env_cache) { FreeEnvironmentStrings(block); return NULL; }
+
+    int i = 0;
+    for (LPCH p = block; *p; p += strlen(p) + 1)
+        g_env_cache[i++] = _strdup(p);
+    g_env_cache[i] = NULL;
+
+    FreeEnvironmentStrings(block);
+    return g_env_cache;
 }
 
 int cfd_platform_read_key(void) {
