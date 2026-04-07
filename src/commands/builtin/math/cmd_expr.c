@@ -4,7 +4,9 @@
 #include <string.h>
 #include <ctype.h>
 #include <stdbool.h>
-#include <regex.h>
+#ifndef _WIN32
+#  include <regex.h>
+#endif
 
 /* ---- expr: evaluates an expression like POSIX expr ---- */
 

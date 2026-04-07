@@ -5,6 +5,7 @@
 #include "../../../utils/mem.h"
 #include <stdio.h>
 #include <string.h>
+#include <stdbool.h>
 
 static void print_category(const char *cat, int *cmd_count, const char **names) {
     const cfd_theme_t *t = cfd_theme_get();
@@ -35,13 +36,29 @@ int cmd_help(cfd_session_t *sess, int argc, char **argv) {
     }
 
     printf("%scFd built-in commands%s\n", cfd_color_fg(t->prompt_user), cfd_color_reset());
-    printf("Type 'help <command>' for details.\n");
+    printf("Type 'help <command>' for details on any built-in.\n\n");
 
     int n; const char **names = cfd_registry_list_names(&n);
-    const char *cats[] = {"filesystem","text","system","process",NULL};
-    for (int c = 0; cats[c]; c++) print_category(cats[c], &n, names);
+    const char *cats[] = {
+        "filesystem", "text", "system", "process",
+        "network", "math", "crypto", "editor", "package",
+        NULL
+    };
+    for (int c = 0; cats[c]; c++) {
+        /* Only print category if it has members */
+        bool has = false;
+        for (int i = 0; i < n; i++) {
+            const cfd_command_t *cmd = cfd_registry_find(g_registry, names[i]);
+            if (cmd && strcmp(cmd->category, cats[c]) == 0) { has = true; break; }
+        }
+        if (has) print_category(cats[c], &n, names);
+    }
     cfd_free((void*)names);
-    printf("\n");
+
+    printf("\n%sExternal programs%s\n", cfd_color_fg(t->info_color), cfd_color_reset());
+    printf("  Any program in your PATH can be run directly:\n");
+    printf("  e.g.  powershell   wsl   notepad   python   git   node\n");
+    printf("  cFd searches PATH automatically — no need to type the full path.\n\n");
     return 0;
 }
 const cfd_command_t builtin_help = {

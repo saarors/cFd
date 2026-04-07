@@ -87,6 +87,12 @@ SRC_COMMANDS = \
   src/commands/builtin/fs/cmd_touch.c \
   src/commands/builtin/fs/cmd_stat.c \
   src/commands/builtin/fs/cmd_find.c \
+  src/commands/builtin/fs/cmd_du.c \
+  src/commands/builtin/fs/cmd_df.c \
+  src/commands/builtin/fs/cmd_ln.c \
+  src/commands/builtin/fs/cmd_realpath.c \
+  src/commands/builtin/fs/cmd_tree.c \
+  src/commands/builtin/fs/cmd_chmod.c \
   src/commands/builtin/text/cmd_echo.c \
   src/commands/builtin/text/cmd_grep.c \
   src/commands/builtin/text/cmd_wc.c \
@@ -95,6 +101,13 @@ SRC_COMMANDS = \
   src/commands/builtin/text/cmd_tail.c \
   src/commands/builtin/text/cmd_cut.c \
   src/commands/builtin/text/cmd_tr.c \
+  src/commands/builtin/text/cmd_tee.c \
+  src/commands/builtin/text/cmd_uniq.c \
+  src/commands/builtin/text/cmd_diff.c \
+  src/commands/builtin/text/cmd_base64.c \
+  src/commands/builtin/text/cmd_xargs.c \
+  src/commands/builtin/text/cmd_column.c \
+  src/commands/builtin/text/cmd_fold.c \
   src/commands/builtin/sys/cmd_env.c \
   src/commands/builtin/sys/cmd_set.c \
   src/commands/builtin/sys/cmd_unset.c \
@@ -104,12 +117,38 @@ SRC_COMMANDS = \
   src/commands/builtin/sys/cmd_alias.c \
   src/commands/builtin/sys/cmd_version.c \
   src/commands/builtin/sys/cmd_help.c \
+  src/commands/builtin/sys/cmd_which.c \
+  src/commands/builtin/sys/cmd_type.c \
+  src/commands/builtin/sys/cmd_history.c \
+  src/commands/builtin/sys/cmd_source.c \
+  src/commands/builtin/sys/cmd_export.c \
+  src/commands/builtin/sys/cmd_read.c \
+  src/commands/builtin/sys/cmd_sleep.c \
+  src/commands/builtin/sys/cmd_uname.c \
+  src/commands/builtin/sys/cmd_whoami.c \
+  src/commands/builtin/sys/cmd_hostname.c \
+  src/commands/builtin/sys/cmd_uptime.c \
+  src/commands/builtin/sys/cmd_watch.c \
+  src/commands/builtin/sys/cmd_test_cmd.c \
   src/commands/builtin/process/cmd_exec.c \
   src/commands/builtin/process/cmd_ps.c \
   src/commands/builtin/process/cmd_kill.c \
   src/commands/builtin/process/cmd_jobs.c \
   src/commands/builtin/process/cmd_bg.c \
-  src/commands/builtin/process/cmd_fg.c
+  src/commands/builtin/process/cmd_fg.c \
+  src/commands/builtin/process/cmd_wait.c \
+  src/commands/builtin/net/cmd_curl.c \
+  src/commands/builtin/net/cmd_wget.c \
+  src/commands/builtin/net/cmd_ping.c \
+  src/commands/builtin/net/cmd_netstat.c \
+  src/commands/builtin/net/cmd_ipconfig.c \
+  src/commands/builtin/editor/cmd_nano.c \
+  src/commands/builtin/pkg/cmd_pkg.c \
+  src/commands/builtin/crypto/cmd_md5.c \
+  src/commands/builtin/crypto/cmd_sha256.c \
+  src/commands/builtin/math/cmd_calc.c \
+  src/commands/builtin/math/cmd_seq.c \
+  src/commands/builtin/math/cmd_expr.c
 
 SRC_CORE = \
   src/core/session.c \
