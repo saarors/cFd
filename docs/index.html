@@ -105,6 +105,61 @@
     }
     .btn-secondary:hover { border-color: var(--cyan); transform: translateY(-1px); text-decoration: none; }
 
+    /* ── DOWNLOAD SECTION ── */
+    .download-section {
+      padding: 80px 2rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .download-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 1.2rem;
+      max-width: 1000px;
+      margin: 2.5rem auto 0;
+    }
+    .dl-card {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.8rem 1.6rem;
+      display: flex; flex-direction: column; gap: 1rem;
+      transition: border-color .2s, transform .2s;
+    }
+    .dl-card:hover { border-color: var(--cyan); transform: translateY(-3px); }
+    .dl-card.win:hover  { border-color: #0078d4; }
+    .dl-card.mac:hover  { border-color: #a2aaad; }
+    .dl-card.linux:hover { border-color: var(--yellow); }
+    .dl-icon { font-size: 2.4rem; line-height: 1; }
+    .dl-platform { font-size: 1.1rem; font-weight: 700; }
+    .dl-file {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: .78rem; color: var(--muted);
+      background: var(--bg3); border: 1px solid var(--border);
+      padding: .35rem .7rem; border-radius: 5px;
+      word-break: break-all;
+    }
+    .dl-size { font-size: .82rem; color: var(--muted); }
+    .dl-btn {
+      display: block; text-align: center;
+      padding: .65rem 1rem; border-radius: 8px;
+      font-weight: 600; font-size: .92rem;
+      margin-top: auto;
+      transition: opacity .2s, transform .1s;
+    }
+    .dl-btn:hover { opacity: .85; transform: translateY(-1px); text-decoration: none; }
+    .dl-btn-win   { background: #0078d4; color: #fff; }
+    .dl-btn-mac   { background: #2d2d2f; color: #fff; border: 1px solid #48484a; }
+    .dl-btn-linux { background: #e95420; color: #fff; }
+    .dl-btn-src   { background: var(--bg3); color: var(--text); border: 1px solid var(--border); }
+    .dl-note { font-size: .8rem; color: var(--muted); text-align: center; margin-top: .5rem; }
+    .dl-latest-tag {
+      display: inline-block;
+      background: var(--green-dim); border: 1px solid var(--green);
+      color: var(--green); font-family: 'JetBrains Mono', monospace;
+      font-size: .75rem; padding: .2rem .6rem; border-radius: 999px;
+      margin-left: .5rem; vertical-align: middle;
+    }
+
     /* ── TERMINAL DEMO ── */
     .terminal-wrap {
       max-width: 860px; margin: 60px auto 0;
@@ -346,11 +401,12 @@
 <nav>
   <div class="nav-logo">c<span>F</span>d</div>
   <div class="nav-links">
+    <a href="#download">Download</a>
     <a href="#features">Features</a>
     <a href="#commands">Commands</a>
     <a href="#scripting">Scripting</a>
     <a href="#architecture">Architecture</a>
-    <a href="#install">Install</a>
+    <a href="#install">Build</a>
     <a href="https://github.com/saarors/cFd" class="nav-btn" target="_blank">GitHub</a>
   </div>
 </nav>
@@ -361,8 +417,9 @@
   <h1>The <span class="c">c</span><span class="f">F</span><span class="d">d</span> Terminal</h1>
   <p>A fully custom shell built from scratch in C. No bash. No PowerShell. No wrappers. Just pure C.</p>
   <div class="hero-btns">
-    <a href="https://github.com/saarors/cFd" class="btn-primary" target="_blank">View on GitHub</a>
-    <a href="#install" class="btn-secondary">Get Started</a>
+    <a href="#download" class="btn-primary">⬇ Download v1.0.0</a>
+    <a href="https://github.com/saarors/cFd" class="btn-secondary" target="_blank">View on GitHub</a>
+    <a href="#install" class="btn-secondary">Build from Source</a>
   </div>
 
   <div class="terminal-wrap">
@@ -435,6 +492,56 @@
     </div>
   </div>
 </header>
+
+<!-- DOWNLOAD -->
+<section id="download" class="download-section">
+  <div style="text-align:center; max-width:1100px; margin:0 auto;">
+    <div class="section-label">// download</div>
+    <h2>Get cFd <span class="dl-latest-tag">v1.0.0</span></h2>
+    <p style="color:var(--muted); margin:.5rem 0 0">Pick your platform and get running in seconds.</p>
+    <div class="download-grid">
+
+      <!-- Windows -->
+      <div class="dl-card win">
+        <div class="dl-icon">🪟</div>
+        <div class="dl-platform">Windows</div>
+        <div class="dl-file">cFd-1.0.0-windows.msi</div>
+        <div class="dl-size">~660 KB &middot; Windows 10/11 x64</div>
+        <a href="https://github.com/saarors/cFd/releases/download/v1.0.0/cFd-1.0.0-windows.msi"
+           class="dl-btn dl-btn-win" target="_blank">⬇ Download .msi</a>
+        <div class="dl-note">MSI installer &mdash; adds <code>cfd</code> to PATH automatically</div>
+      </div>
+
+      <!-- macOS -->
+      <div class="dl-card mac">
+        <div class="dl-icon"></div>
+        <div class="dl-platform">macOS</div>
+        <div class="dl-file">cFd-1.0.0-macos.dmg</div>
+        <div class="dl-size">macOS 10.13+ &middot; Intel &amp; Apple Silicon</div>
+        <a href="https://github.com/saarors/cFd/releases/download/v1.0.0/cFd-1.0.0-macos.dmg"
+           class="dl-btn dl-btn-mac" target="_blank">⬇ Download .dmg</a>
+        <div class="dl-note">Drag cFd.app to /Applications</div>
+      </div>
+
+      <!-- Linux -->
+      <div class="dl-card linux">
+        <div class="dl-icon">🐧</div>
+        <div class="dl-platform">Linux</div>
+        <div class="dl-file">cFd-1.0.0-linux-x86_64.tar.gz</div>
+        <div class="dl-size">x86_64 &middot; any distro</div>
+        <a href="https://github.com/saarors/cFd/releases/download/v1.0.0/cFd-1.0.0-linux-x86_64.tar.gz"
+           class="dl-btn dl-btn-linux" target="_blank">⬇ Download .tar.gz</a>
+        <div class="dl-note"><code>chmod +x cfd &amp;&amp; ./cfd</code></div>
+      </div>
+
+    </div>
+    <p style="margin-top:1.5rem; color:var(--muted); font-size:.88rem">
+      Or <a href="https://github.com/saarors/cFd/releases">view all releases on GitHub</a>
+      &nbsp;&middot;&nbsp;
+      <a href="#install">build from source</a>
+    </p>
+  </div>
+</section>
 
 <!-- STATS -->
 <div class="stats">

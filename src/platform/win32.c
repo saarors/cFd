@@ -207,6 +207,9 @@ int cfd_platform_unsetenv(const char *name) {
 }
 
 char **cfd_platform_environ(void) {
+    /* _environ is declared in <stdlib.h> but some MinGW builds need an
+       explicit extern to avoid the __imp__environ linker error. */
+    extern char **_environ;
     return _environ;
 }
 

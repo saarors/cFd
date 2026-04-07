@@ -14,6 +14,7 @@
 #  include <windows.h>
 #else
 #  include <dirent.h>
+#  include <unistd.h>
 #endif
 
 static char  *g_extra_words[CFD_MAX_COMPLETION];

@@ -122,7 +122,10 @@ int cfd_platform_read_key(void) {
 }
 
 void cfd_platform_sleep_ms(unsigned ms) {
-    usleep(ms * 1000);
+    struct timespec ts;
+    ts.tv_sec  = ms / 1000;
+    ts.tv_nsec = (ms % 1000) * 1000000L;
+    nanosleep(&ts, NULL);
 }
 
 void cfd_platform_clear_screen(void) {
