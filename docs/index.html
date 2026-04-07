@@ -1,0 +1,834 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>cFd — A Terminal Built from Scratch in C</title>
+  <meta name="description" content="cFd is a fully custom terminal shell written in C. No bash, no PowerShell, no wrappers. Just pure C." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #0d1117;
+      --bg2:       #161b22;
+      --bg3:       #1c2128;
+      --border:    #30363d;
+      --text:      #e6edf3;
+      --muted:     #8b949e;
+      --green:     #3fb950;
+      --green-dim: #1f6a27;
+      --cyan:      #58a6ff;
+      --yellow:    #d29922;
+      --red:       #f85149;
+      --purple:    #bc8cff;
+      --accent:    #238636;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Inter', sans-serif;
+      line-height: 1.6;
+    }
+
+    a { color: var(--cyan); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    /* ── NAV ── */
+    nav {
+      position: sticky; top: 0; z-index: 100;
+      background: rgba(13,17,23,.92);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 2rem; height: 60px;
+    }
+    .nav-logo {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 1.3rem; font-weight: 700;
+      color: var(--green);
+    }
+    .nav-logo span { color: var(--muted); }
+    .nav-links { display: flex; gap: 1.5rem; }
+    .nav-links a { color: var(--muted); font-size: .9rem; transition: color .2s; }
+    .nav-links a:hover { color: var(--text); text-decoration: none; }
+    .nav-btn {
+      background: var(--accent); color: #fff !important;
+      padding: .4rem 1rem; border-radius: 6px;
+      font-size: .85rem; font-weight: 600;
+      transition: opacity .2s;
+    }
+    .nav-btn:hover { opacity: .85; text-decoration: none !important; }
+
+    /* ── HERO ── */
+    .hero {
+      text-align: center;
+      padding: 100px 2rem 60px;
+      background: radial-gradient(ellipse 80% 50% at 50% -10%, #0c2d1a 0%, transparent 70%);
+    }
+    .hero-badge {
+      display: inline-block;
+      background: var(--bg2); border: 1px solid var(--green-dim);
+      color: var(--green); font-size: .78rem; font-family: 'JetBrains Mono', monospace;
+      padding: .3rem .8rem; border-radius: 999px; margin-bottom: 1.5rem;
+    }
+    .hero h1 {
+      font-size: clamp(2.8rem, 7vw, 5rem);
+      font-weight: 700; letter-spacing: -.03em; line-height: 1.1;
+      margin-bottom: 1.2rem;
+    }
+    .hero h1 .c { color: var(--green); }
+    .hero h1 .f { color: var(--cyan); }
+    .hero h1 .d { color: var(--purple); }
+    .hero p {
+      font-size: 1.2rem; color: var(--muted);
+      max-width: 600px; margin: 0 auto 2.5rem;
+    }
+    .hero-btns { display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; }
+    .btn-primary {
+      background: var(--accent); color: #fff;
+      padding: .75rem 1.8rem; border-radius: 8px;
+      font-weight: 600; font-size: 1rem;
+      transition: opacity .2s, transform .1s;
+    }
+    .btn-primary:hover { opacity: .85; transform: translateY(-1px); text-decoration: none; }
+    .btn-secondary {
+      background: var(--bg2); color: var(--text);
+      border: 1px solid var(--border);
+      padding: .75rem 1.8rem; border-radius: 8px;
+      font-weight: 600; font-size: 1rem;
+      transition: border-color .2s, transform .1s;
+    }
+    .btn-secondary:hover { border-color: var(--cyan); transform: translateY(-1px); text-decoration: none; }
+
+    /* ── TERMINAL DEMO ── */
+    .terminal-wrap {
+      max-width: 860px; margin: 60px auto 0;
+      padding: 0 1.5rem;
+    }
+    .terminal {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 20px 60px rgba(0,0,0,.6);
+    }
+    .terminal-bar {
+      background: var(--bg3);
+      border-bottom: 1px solid var(--border);
+      padding: .7rem 1rem;
+      display: flex; align-items: center; gap: .5rem;
+    }
+    .dot { width: 12px; height: 12px; border-radius: 50%; }
+    .dot-r { background: #ff5f57; }
+    .dot-y { background: #febc2e; }
+    .dot-g { background: #28c840; }
+    .terminal-title {
+      flex: 1; text-align: center;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: .78rem; color: var(--muted);
+    }
+    .terminal-body {
+      padding: 1.4rem 1.6rem;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: .88rem; line-height: 1.8;
+      min-height: 320px;
+    }
+    .line { display: flex; flex-wrap: wrap; gap: .25rem; }
+    .prompt-user  { color: var(--green); }
+    .prompt-host  { color: #57ab5a; }
+    .prompt-path  { color: var(--cyan); }
+    .prompt-sym   { color: var(--green); }
+    .cmd-builtin  { color: var(--green); }
+    .cmd-flag     { color: var(--muted); }
+    .cmd-string   { color: var(--yellow); }
+    .cmd-pipe     { color: var(--cyan); }
+    .cmd-var      { color: var(--purple); }
+    .out          { color: var(--text); display: block; margin-left: 0; }
+    .out-dim      { color: var(--muted); display: block; }
+    .out-dir      { color: var(--cyan); }
+    .out-exec     { color: var(--green); }
+    .out-red      { color: var(--red); }
+    .out-yellow   { color: var(--yellow); }
+    .cursor {
+      display: inline-block; width: 9px; height: 1.1em;
+      background: var(--green); vertical-align: text-bottom;
+      animation: blink 1.1s step-end infinite;
+    }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+
+    /* ── STATS ── */
+    .stats {
+      display: flex; justify-content: center; gap: 3rem; flex-wrap: wrap;
+      padding: 60px 2rem;
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      margin-top: 60px;
+    }
+    .stat { text-align: center; }
+    .stat-num {
+      font-size: 2.4rem; font-weight: 700;
+      font-family: 'JetBrains Mono', monospace;
+      color: var(--green);
+    }
+    .stat-label { color: var(--muted); font-size: .9rem; margin-top: .2rem; }
+
+    /* ── SECTIONS ── */
+    section { padding: 80px 2rem; }
+    .section-inner { max-width: 1100px; margin: 0 auto; }
+    .section-label {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: .78rem; color: var(--green);
+      text-transform: uppercase; letter-spacing: .1em;
+      margin-bottom: .6rem;
+    }
+    h2 {
+      font-size: clamp(1.8rem, 4vw, 2.6rem);
+      font-weight: 700; margin-bottom: 1rem; letter-spacing: -.02em;
+    }
+    .section-sub { color: var(--muted); max-width: 600px; margin-bottom: 3rem; font-size: 1.05rem; }
+
+    /* ── FEATURES GRID ── */
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+      gap: 1.2rem;
+    }
+    .feature-card {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.4rem;
+      transition: border-color .2s, transform .2s;
+    }
+    .feature-card:hover { border-color: var(--cyan); transform: translateY(-2px); }
+    .feature-icon { font-size: 1.6rem; margin-bottom: .8rem; }
+    .feature-card h3 { font-size: 1rem; font-weight: 600; margin-bottom: .4rem; }
+    .feature-card p { color: var(--muted); font-size: .88rem; line-height: 1.5; }
+
+    /* ── COMMANDS TABLE ── */
+    .cmd-tabs {
+      display: flex; gap: .5rem; flex-wrap: wrap; margin-bottom: 1.5rem;
+    }
+    .cmd-tab {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      color: var(--muted);
+      padding: .4rem 1rem; border-radius: 6px;
+      font-size: .85rem; cursor: pointer;
+      transition: all .2s;
+    }
+    .cmd-tab.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+    .cmd-tab:hover:not(.active) { border-color: var(--cyan); color: var(--text); }
+    .cmd-table-wrap { display: none; }
+    .cmd-table-wrap.active { display: block; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: .9rem;
+    }
+    th {
+      text-align: left; padding: .7rem 1rem;
+      background: var(--bg3); color: var(--muted);
+      border-bottom: 1px solid var(--border);
+      font-weight: 600; font-size: .8rem;
+      text-transform: uppercase; letter-spacing: .05em;
+    }
+    td { padding: .65rem 1rem; border-bottom: 1px solid var(--border); }
+    td:first-child {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: .82rem; color: var(--green);
+      white-space: nowrap;
+    }
+    td:last-child { color: var(--muted); }
+    tr:hover td { background: var(--bg2); }
+
+    /* ── CODE BLOCKS ── */
+    .code-block {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 10px; overflow: hidden;
+      margin: 1.5rem 0;
+    }
+    .code-header {
+      background: var(--bg3);
+      border-bottom: 1px solid var(--border);
+      padding: .5rem 1rem;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .code-lang { font-family: 'JetBrains Mono', monospace; font-size: .75rem; color: var(--muted); }
+    .code-copy {
+      background: none; border: 1px solid var(--border);
+      color: var(--muted); font-size: .75rem;
+      padding: .2rem .6rem; border-radius: 4px;
+      cursor: pointer; transition: all .2s;
+      font-family: 'Inter', sans-serif;
+    }
+    .code-copy:hover { border-color: var(--cyan); color: var(--cyan); }
+    pre {
+      padding: 1.2rem 1.4rem;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: .85rem; line-height: 1.7;
+      overflow-x: auto;
+    }
+    .kw  { color: #ff7b72; }
+    .fn  { color: var(--green); }
+    .str { color: var(--yellow); }
+    .cm  { color: var(--muted); font-style: italic; }
+    .var { color: var(--purple); }
+    .num { color: #79c0ff; }
+
+    /* ── ARCHITECTURE ── */
+    .arch-flow {
+      display: flex; align-items: center; justify-content: center;
+      flex-wrap: wrap; gap: .5rem; margin: 2rem 0;
+    }
+    .arch-box {
+      background: var(--bg2); border: 1px solid var(--border);
+      border-radius: 8px; padding: .6rem 1.1rem;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: .82rem; color: var(--text);
+    }
+    .arch-box.highlight { border-color: var(--green); color: var(--green); }
+    .arch-arrow { color: var(--muted); font-size: 1.2rem; }
+    .arch-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+      gap: .8rem; margin-top: 2rem;
+    }
+    .arch-mod {
+      background: var(--bg2); border: 1px solid var(--border);
+      border-radius: 8px; padding: .8rem 1rem;
+    }
+    .arch-mod-name {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: .8rem; color: var(--cyan);
+      margin-bottom: .3rem;
+    }
+    .arch-mod p { font-size: .78rem; color: var(--muted); }
+
+    /* ── INSTALL ── */
+    .install-steps { display: flex; flex-direction: column; gap: 1.5rem; margin-top: 2rem; }
+    .install-step { display: flex; gap: 1.2rem; align-items: flex-start; }
+    .step-num {
+      flex-shrink: 0;
+      width: 32px; height: 32px;
+      background: var(--accent); border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 700; font-size: .9rem;
+    }
+    .step-content h4 { font-size: 1rem; margin-bottom: .4rem; }
+    .step-content p { color: var(--muted); font-size: .9rem; }
+
+    /* ── FOOTER ── */
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 2.5rem 2rem;
+      text-align: center;
+      color: var(--muted); font-size: .88rem;
+    }
+    footer strong { color: var(--text); }
+
+    @media (max-width: 600px) {
+      .nav-links { display: none; }
+      .stats { gap: 2rem; }
+      .hero { padding: 70px 1.5rem 40px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-logo">c<span>F</span>d</div>
+  <div class="nav-links">
+    <a href="#features">Features</a>
+    <a href="#commands">Commands</a>
+    <a href="#scripting">Scripting</a>
+    <a href="#architecture">Architecture</a>
+    <a href="#install">Install</a>
+    <a href="https://github.com/saarors/cFd" class="nav-btn" target="_blank">GitHub</a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<header class="hero">
+  <div class="hero-badge">v1.0.0 &mdash; Written in C11</div>
+  <h1>The <span class="c">c</span><span class="f">F</span><span class="d">d</span> Terminal</h1>
+  <p>A fully custom shell built from scratch in C. No bash. No PowerShell. No wrappers. Just pure C.</p>
+  <div class="hero-btns">
+    <a href="https://github.com/saarors/cFd" class="btn-primary" target="_blank">View on GitHub</a>
+    <a href="#install" class="btn-secondary">Get Started</a>
+  </div>
+
+  <div class="terminal-wrap">
+    <div class="terminal">
+      <div class="terminal-bar">
+        <div class="dot dot-r"></div>
+        <div class="dot dot-y"></div>
+        <div class="dot dot-g"></div>
+        <div class="terminal-title">cfd — ~/projects</div>
+      </div>
+      <div class="terminal-body">
+
+        <div class="line">
+          <span class="prompt-user">saar</span><span class="prompt-host">@machine</span>
+          <span> </span><span class="prompt-path">~/projects</span>
+          <span class="prompt-sym"> &gt; </span>
+          <span class="cmd-builtin">ls</span> <span class="cmd-flag">-la</span>
+        </div>
+        <span class="out">
+          <span class="out-dir">src/</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+          <span class="out-dir">include/</span>&nbsp;&nbsp;&nbsp;
+          <span class="out-dir">tests/</span>&nbsp;&nbsp;&nbsp;&nbsp;
+          <span class="out-exec">cfd.exe</span>&nbsp;&nbsp;&nbsp;
+          <span class="out">Makefile&nbsp;&nbsp;</span>
+        </span>
+
+        <br/>
+        <div class="line">
+          <span class="prompt-user">saar</span><span class="prompt-host">@machine</span>
+          <span> </span><span class="prompt-path">~/projects</span>
+          <span class="prompt-sym"> &gt; </span>
+          <span class="cmd-builtin">cat</span> <span class="cmd-string">notes.txt</span>
+          <span class="cmd-pipe"> | </span>
+          <span class="cmd-builtin">grep</span> <span class="cmd-flag">-i</span>
+          <span class="cmd-string">"todo"</span>
+          <span class="cmd-pipe"> | </span>
+          <span class="cmd-builtin">sort</span>
+        </div>
+        <span class="out-yellow out">TODO: finish the parser</span>
+        <span class="out-yellow out">TODO: write tests</span>
+
+        <br/>
+        <div class="line">
+          <span class="prompt-user">saar</span><span class="prompt-host">@machine</span>
+          <span> </span><span class="prompt-path">~/projects</span>
+          <span class="prompt-sym"> &gt; </span>
+          <span class="cmd-builtin">calc</span>
+          <span> sqrt(2) * pi</span>
+        </div>
+        <span class="out">4.4428829</span>
+
+        <br/>
+        <div class="line">
+          <span class="prompt-user">saar</span><span class="prompt-host">@machine</span>
+          <span> </span><span class="prompt-path">~/projects</span>
+          <span class="prompt-sym"> &gt; </span>
+          <span class="cmd-builtin">pkg</span> <span>install git</span>
+        </div>
+        <span class="out-dim out">Searching for git...</span>
+        <span class="out" style="color:var(--green)">Installing Git.Git via winget...</span>
+
+        <br/>
+        <div class="line">
+          <span class="prompt-user">saar</span><span class="prompt-host">@machine</span>
+          <span> </span><span class="prompt-path">~/projects</span>
+          <span class="prompt-sym"> &gt; </span>
+          <span class="cursor"></span>
+        </div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<!-- STATS -->
+<div class="stats">
+  <div class="stat">
+    <div class="stat-num">150+</div>
+    <div class="stat-label">Source Files</div>
+  </div>
+  <div class="stat">
+    <div class="stat-num">70+</div>
+    <div class="stat-label">Built-in Commands</div>
+  </div>
+  <div class="stat">
+    <div class="stat-num">0</div>
+    <div class="stat-label">External Dependencies</div>
+  </div>
+  <div class="stat">
+    <div class="stat-num">C11</div>
+    <div class="stat-label">Language Standard</div>
+  </div>
+</div>
+
+<!-- FEATURES -->
+<section id="features">
+  <div class="section-inner">
+    <div class="section-label">// features</div>
+    <h2>Everything built from scratch</h2>
+    <p class="section-sub">Every subsystem — the lexer, parser, line editor, scripting engine, and all 70+ commands — is written in C with zero external libraries.</p>
+
+    <div class="features-grid">
+      <div class="feature-card">
+        <div class="feature-icon">✏️</div>
+        <h3>Syntax Highlighting</h3>
+        <p>Commands, strings, pipes, variables, and flags are colorized in real time as you type.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">💡</div>
+        <h3>Auto-suggest</h3>
+        <p>Ghost-text completion from history appears after the cursor. Press → to accept instantly.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🔍</div>
+        <h3>Ctrl+R Search</h3>
+        <p>Incremental reverse history search. Type to filter, Enter to accept, Ctrl+G to cancel.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">⌨️</div>
+        <h3>Full Line Editor</h3>
+        <p>Arrow keys, Home/End, Ctrl+A/E/K/U/W/Y, word-kill, kill-ring. Works exactly as expected.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">|</div>
+        <h3>Real Pipes</h3>
+        <p><code>cmd1 | cmd2 | cmd3</code> uses real <code>dup2</code> pipe chaining — no temp files, no workarounds.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">📜</div>
+        <h3>Scripting Engine</h3>
+        <p>Variables, <code>if/elif/else</code>, <code>while</code>, <code>for</code>, functions, and <code>source</code> — a complete mini-language.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🧮</div>
+        <h3>Built-in Calculator</h3>
+        <p><code>calc sqrt(2) * pi</code> — expression parser with trig, log, sqrt, and constants.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">📦</div>
+        <h3>Package Manager</h3>
+        <p><code>pkg install git</code> auto-detects winget, scoop, choco, apt, or brew and installs.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">📝</div>
+        <h3>Built-in Editor</h3>
+        <p><code>nano file.txt</code> opens a full terminal text editor with search, cut/paste, and save.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🌐</div>
+        <h3>HTTP Client</h3>
+        <p><code>curl</code> and <code>wget</code> built in using WinHTTP (Windows) or BSD sockets (Unix).</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🔐</div>
+        <h3>Crypto Hashing</h3>
+        <p><code>md5</code> and <code>sha256</code> implemented from scratch — RFC 1321 and FIPS 180-4.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🎨</div>
+        <h3>Themes</h3>
+        <p>Three built-in themes: <code>default</code>, <code>dark</code>, and <code>minimal</code>. Configurable prompt format.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- COMMANDS -->
+<section id="commands" style="background:var(--bg2); border-top:1px solid var(--border); border-bottom:1px solid var(--border);">
+  <div class="section-inner">
+    <div class="section-label">// commands</div>
+    <h2>70+ built-in commands</h2>
+    <p class="section-sub">Every command is a native C function — no forking to an external tool.</p>
+
+    <div class="cmd-tabs">
+      <button class="cmd-tab active" onclick="showTab('fs',this)">Filesystem</button>
+      <button class="cmd-tab" onclick="showTab('text',this)">Text</button>
+      <button class="cmd-tab" onclick="showTab('sys',this)">System</button>
+      <button class="cmd-tab" onclick="showTab('net',this)">Network</button>
+      <button class="cmd-tab" onclick="showTab('math',this)">Math</button>
+      <button class="cmd-tab" onclick="showTab('proc',this)">Process</button>
+    </div>
+
+    <div id="tab-fs" class="cmd-table-wrap active">
+      <table><thead><tr><th>Command</th><th>Description</th></tr></thead><tbody>
+        <tr><td>ls [-la] [path]</td><td>List directory with color-coded entries</td></tr>
+        <tr><td>cd [path]</td><td>Change directory; <code>cd -</code> goes back</td></tr>
+        <tr><td>pwd</td><td>Print working directory</td></tr>
+        <tr><td>mkdir [-p] &lt;dir&gt;</td><td>Create directory, -p creates parents</td></tr>
+        <tr><td>rm [-rf] &lt;path&gt;</td><td>Remove files or directories</td></tr>
+        <tr><td>cp [-r] &lt;src&gt; &lt;dst&gt;</td><td>Copy files or directories</td></tr>
+        <tr><td>mv &lt;src&gt; &lt;dst&gt;</td><td>Move or rename</td></tr>
+        <tr><td>cat [file...]</td><td>Print file contents</td></tr>
+        <tr><td>find [dir] [-name pat]</td><td>Find files matching pattern</td></tr>
+        <tr><td>tree [-L n] [path]</td><td>Visual directory tree with box-drawing chars</td></tr>
+        <tr><td>du [-sh] [path]</td><td>Disk usage, -h for human-readable</td></tr>
+        <tr><td>df [-h]</td><td>Disk free space for all volumes</td></tr>
+        <tr><td>ln [-s] &lt;target&gt; &lt;link&gt;</td><td>Create hard or symbolic link</td></tr>
+        <tr><td>stat &lt;file&gt;</td><td>File metadata (size, dates, permissions)</td></tr>
+        <tr><td>realpath &lt;path&gt;</td><td>Resolve to absolute path</td></tr>
+        <tr><td>chmod &lt;mode&gt; &lt;file&gt;</td><td>Change file permissions</td></tr>
+      </tbody></table>
+    </div>
+
+    <div id="tab-text" class="cmd-table-wrap">
+      <table><thead><tr><th>Command</th><th>Description</th></tr></thead><tbody>
+        <tr><td>grep [-rni] &lt;pat&gt;</td><td>Search text with regex</td></tr>
+        <tr><td>sort [-rnu]</td><td>Sort lines alphabetically or numerically</td></tr>
+        <tr><td>wc [-lwc]</td><td>Count words, lines, and characters</td></tr>
+        <tr><td>head / tail [-n N]</td><td>Show first or last N lines</td></tr>
+        <tr><td>cut -d &lt;d&gt; -f &lt;n&gt;</td><td>Extract delimited fields</td></tr>
+        <tr><td>tr &lt;set1&gt; &lt;set2&gt;</td><td>Translate characters</td></tr>
+        <tr><td>uniq [-cd]</td><td>Filter adjacent duplicate lines</td></tr>
+        <tr><td>diff [-u] &lt;f1&gt; &lt;f2&gt;</td><td>Colorized file diff</td></tr>
+        <tr><td>tee [-a] &lt;file&gt;</td><td>Write stdin to stdout and file</td></tr>
+        <tr><td>base64 [-d]</td><td>Encode or decode base64</td></tr>
+        <tr><td>xargs [-n N] &lt;cmd&gt;</td><td>Build command from stdin args</td></tr>
+        <tr><td>column [-t]</td><td>Format text into aligned columns</td></tr>
+        <tr><td>fold [-w N]</td><td>Wrap long lines at width</td></tr>
+      </tbody></table>
+    </div>
+
+    <div id="tab-sys" class="cmd-table-wrap">
+      <table><thead><tr><th>Command</th><th>Description</th></tr></thead><tbody>
+        <tr><td>help [cmd]</td><td>Show all commands or detail on one</td></tr>
+        <tr><td>version</td><td>cFd version and platform info</td></tr>
+        <tr><td>clear</td><td>Clear terminal screen</td></tr>
+        <tr><td>date</td><td>Current date and time</td></tr>
+        <tr><td>uname [-a]</td><td>OS name, version, architecture</td></tr>
+        <tr><td>whoami</td><td>Current username</td></tr>
+        <tr><td>hostname</td><td>System hostname</td></tr>
+        <tr><td>uptime</td><td>System uptime in days/hours/minutes</td></tr>
+        <tr><td>env</td><td>List all environment variables</td></tr>
+        <tr><td>export [name=val]</td><td>Export variable to environment</td></tr>
+        <tr><td>set / unset</td><td>Set or unset shell variables</td></tr>
+        <tr><td>alias / unalias</td><td>Define and list aliases</td></tr>
+        <tr><td>source &lt;file&gt;</td><td>Execute script in current session</td></tr>
+        <tr><td>history [n]</td><td>Show command history</td></tr>
+        <tr><td>which &lt;cmd&gt;</td><td>Find command in PATH</td></tr>
+        <tr><td>sleep &lt;secs&gt;</td><td>Sleep for N seconds (supports decimals)</td></tr>
+        <tr><td>watch [-n s] &lt;cmd&gt;</td><td>Repeat command every N seconds</td></tr>
+        <tr><td>test &lt;expr&gt;</td><td>Evaluate file/string/integer test</td></tr>
+        <tr><td>read [-p prompt] &lt;var&gt;</td><td>Read line from stdin into variable</td></tr>
+      </tbody></table>
+    </div>
+
+    <div id="tab-net" class="cmd-table-wrap">
+      <table><thead><tr><th>Command</th><th>Description</th></tr></thead><tbody>
+        <tr><td>curl [-o file] &lt;url&gt;</td><td>HTTP/HTTPS client (GET, POST, headers)</td></tr>
+        <tr><td>wget [-O file] &lt;url&gt;</td><td>Download file with progress indicator</td></tr>
+        <tr><td>ping [-c n] &lt;host&gt;</td><td>Send ICMP echo requests</td></tr>
+        <tr><td>netstat</td><td>Show active network connections</td></tr>
+        <tr><td>ipconfig / ifconfig</td><td>Network interface configuration</td></tr>
+      </tbody></table>
+    </div>
+
+    <div id="tab-math" class="cmd-table-wrap">
+      <table><thead><tr><th>Command</th><th>Description</th></tr></thead><tbody>
+        <tr><td>calc &lt;expr&gt;</td><td>Evaluate: +−×÷%, ^, sin, cos, tan, sqrt, log, floor, ceil, pi, e, ans</td></tr>
+        <tr><td>expr &lt;a&gt; &lt;op&gt; &lt;b&gt;</td><td>Integer and string expressions (POSIX expr)</td></tr>
+        <tr><td>seq [first [inc]] last</td><td>Generate number sequence with optional format</td></tr>
+        <tr><td>md5 [-s str] [file]</td><td>MD5 hash (RFC 1321, implemented from scratch)</td></tr>
+        <tr><td>sha256 [-s str] [file]</td><td>SHA-256 hash (FIPS 180-4, implemented from scratch)</td></tr>
+      </tbody></table>
+    </div>
+
+    <div id="tab-proc" class="cmd-table-wrap">
+      <table><thead><tr><th>Command</th><th>Description</th></tr></thead><tbody>
+        <tr><td>ps</td><td>List running processes</td></tr>
+        <tr><td>kill [-s sig] &lt;pid&gt;</td><td>Send signal to process</td></tr>
+        <tr><td>jobs</td><td>List background jobs</td></tr>
+        <tr><td>bg / fg [job]</td><td>Resume job in background or foreground</td></tr>
+        <tr><td>exec &lt;cmd&gt;</td><td>Replace shell with command</td></tr>
+        <tr><td>wait [pid]</td><td>Wait for process or all jobs</td></tr>
+      </tbody></table>
+    </div>
+  </div>
+</section>
+
+<!-- SCRIPTING -->
+<section id="scripting">
+  <div class="section-inner">
+    <div class="section-label">// scripting</div>
+    <h2>A complete scripting language</h2>
+    <p class="section-sub">Write scripts in cFd's own language. Variables, control flow, functions, and pipelines all work together.</p>
+
+    <div class="code-block">
+      <div class="code-header">
+        <span class="code-lang">cFd script</span>
+        <button class="code-copy" onclick="copyCode(this)">Copy</button>
+      </div>
+      <pre><span class="cm"># ~/.cfdrc — loaded on startup</span>
+<span class="fn">alias</span> ll=<span class="str">"ls -la"</span>
+<span class="fn">alias</span> gs=<span class="str">"git status"</span>
+<span class="kw">export</span> <span class="var">EDITOR</span>=nano
+
+<span class="cm"># Function with arguments</span>
+<span class="kw">function</span> <span class="fn">mkcd</span>
+  <span class="fn">mkdir</span> -p <span class="var">$1</span>
+  <span class="fn">cd</span> <span class="var">$1</span>
+<span class="kw">end</span>
+
+<span class="cm"># If / elif / else</span>
+<span class="kw">if</span> <span class="fn">test</span> -f config.json
+  <span class="fn">echo</span> <span class="str">"Config found"</span>
+<span class="kw">elif</span> <span class="fn">test</span> -d config/
+  <span class="fn">echo</span> <span class="str">"Config directory found"</span>
+<span class="kw">else</span>
+  <span class="fn">echo</span> <span class="str">"No config"</span>
+<span class="kw">fi</span>
+
+<span class="cm"># Pipeline + redirection</span>
+<span class="fn">ls</span> -la | <span class="fn">grep</span> <span class="str">".c"</span> | <span class="fn">sort</span> | <span class="fn">head</span> -10 &gt; sources.txt
+
+<span class="cm"># For loop over glob</span>
+<span class="kw">for</span> f <span class="kw">in</span> *.c
+  <span class="fn">echo</span> <span class="str">"  <span class="var">$f</span>"</span>
+<span class="kw">done</span></pre>
+    </div>
+  </div>
+</section>
+
+<!-- ARCHITECTURE -->
+<section id="architecture" style="background:var(--bg2); border-top:1px solid var(--border); border-bottom:1px solid var(--border);">
+  <div class="section-inner">
+    <div class="section-label">// architecture</div>
+    <h2>Built from first principles</h2>
+    <p class="section-sub">Every layer is custom. The pipeline from keypress to result is entirely hand-written C.</p>
+
+    <div class="arch-flow">
+      <div class="arch-box highlight">Source / Input</div>
+      <div class="arch-arrow">→</div>
+      <div class="arch-box">Lexer</div>
+      <div class="arch-arrow">→</div>
+      <div class="arch-box">Tokens</div>
+      <div class="arch-arrow">→</div>
+      <div class="arch-box">Parser</div>
+      <div class="arch-arrow">→</div>
+      <div class="arch-box">AST</div>
+      <div class="arch-arrow">→</div>
+      <div class="arch-box">Dispatcher</div>
+      <div class="arch-arrow">→</div>
+      <div class="arch-box highlight">Built-in / External</div>
+    </div>
+
+    <div class="arch-grid">
+      <div class="arch-mod">
+        <div class="arch-mod-name">utils/</div>
+        <p>Memory, strings, hash table, linked list, paths, logging</p>
+      </div>
+      <div class="arch-mod">
+        <div class="arch-mod-name">platform/</div>
+        <p>Win32 + POSIX abstraction for raw mode, processes, I/O</p>
+      </div>
+      <div class="arch-mod">
+        <div class="arch-mod-name">ui/</div>
+        <p>ANSI colors, themes, display helpers, prompt builder</p>
+      </div>
+      <div class="arch-mod">
+        <div class="arch-mod-name">parser/</div>
+        <p>Lexer, token types, recursive descent parser, AST nodes</p>
+      </div>
+      <div class="arch-mod">
+        <div class="arch-mod-name">input/</div>
+        <p>Line editor, key bindings, history, tab completion</p>
+      </div>
+      <div class="arch-mod">
+        <div class="arch-mod-name">io/</div>
+        <p>Streams, real pipe chains, I/O redirection via dup2</p>
+      </div>
+      <div class="arch-mod">
+        <div class="arch-mod-name">scripting/</div>
+        <p>Variables, control flow, user functions, script runner</p>
+      </div>
+      <div class="arch-mod">
+        <div class="arch-mod-name">commands/</div>
+        <p>Command registry, dispatcher, 70+ built-in commands</p>
+      </div>
+      <div class="arch-mod">
+        <div class="arch-mod-name">core/</div>
+        <p>Session state, REPL loop, config loader, terminal init</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- INSTALL -->
+<section id="install">
+  <div class="section-inner">
+    <div class="section-label">// getting started</div>
+    <h2>Build and run</h2>
+    <p class="section-sub">All you need is GCC and Make. No external libraries.</p>
+
+    <div class="install-steps">
+      <div class="install-step">
+        <div class="step-num">1</div>
+        <div class="step-content">
+          <h4>Clone the repository</h4>
+          <div class="code-block" style="margin:0.6rem 0 0">
+            <pre>git clone https://github.com/saarors/cFd.git
+cd cFd</pre>
+          </div>
+        </div>
+      </div>
+      <div class="install-step">
+        <div class="step-num">2</div>
+        <div class="step-content">
+          <h4>Build</h4>
+          <div class="code-block" style="margin:0.6rem 0 0">
+            <pre>make</pre>
+          </div>
+          <p style="margin-top:.4rem">Outputs <code>cfd.exe</code> on Windows, <code>cfd</code> on Linux/macOS.</p>
+        </div>
+      </div>
+      <div class="install-step">
+        <div class="step-num">3</div>
+        <div class="step-content">
+          <h4>Run</h4>
+          <div class="code-block" style="margin:0.6rem 0 0">
+            <pre><span class="cm"># Windows</span>
+.\cfd.exe
+
+<span class="cm"># Linux / macOS</span>
+./cfd</pre>
+          </div>
+        </div>
+      </div>
+      <div class="install-step">
+        <div class="step-num">4</div>
+        <div class="step-content">
+          <h4>Optional: create a startup file</h4>
+          <div class="code-block" style="margin:0.6rem 0 0">
+            <pre><span class="cm"># ~/.cfdrc</span>
+<span class="fn">alias</span> ll=<span class="str">"ls -la"</span>
+<span class="kw">export</span> <span class="var">EDITOR</span>=nano
+theme=dark</pre>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <p>
+    <strong>cFd</strong> &mdash; a terminal built from scratch in C &nbsp;·&nbsp;
+    <a href="https://github.com/saarors/cFd" target="_blank">GitHub</a> &nbsp;·&nbsp;
+    MIT License
+  </p>
+  <p style="margin-top:.5rem; font-size:.8rem;">No bash. No PowerShell. No wrappers. Just C.</p>
+</footer>
+
+<script>
+  function showTab(id, btn) {
+    document.querySelectorAll('.cmd-table-wrap').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('.cmd-tab').forEach(el => el.classList.remove('active'));
+    document.getElementById('tab-' + id).classList.add('active');
+    btn.classList.add('active');
+  }
+
+  function copyCode(btn) {
+    const pre = btn.closest('.code-block').querySelector('pre');
+    navigator.clipboard.writeText(pre.innerText).then(() => {
+      btn.textContent = 'Copied!';
+      setTimeout(() => btn.textContent = 'Copy', 1800);
+    });
+  }
+</script>
+</body>
+</html>
