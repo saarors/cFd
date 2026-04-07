@@ -1,4 +1,5 @@
 #include "cmd_alias.h"
+#include "../../../utils/mem.h"
 #include <stdio.h>
 #include <string.h>
 int cmd_alias(cfd_session_t *sess, int argc, char **argv) {

@@ -6,6 +6,7 @@
 #include "../ui/ui.h"
 #include "../utils/mem.h"
 #include "../utils/log.h"
+#include "../../include/version.h"
 #include <stdio.h>
 #include <string.h>
 

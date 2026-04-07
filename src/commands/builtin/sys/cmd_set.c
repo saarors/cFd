@@ -1,5 +1,6 @@
 #include "cmd_set.h"
 #include "../../../scripting/variable.h"
+#include "../../../utils/mem.h"
 #include <stdio.h>
 #include <string.h>
 int cmd_set(cfd_session_t *sess, int argc, char **argv) {

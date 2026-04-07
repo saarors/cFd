@@ -4,6 +4,8 @@
 #include "../platform/platform.h"
 #include "../utils/mem.h"
 #include "../utils/str_utils.h"
+#include "../../include/version.h"
+#include <stdio.h>
 
 static void alias_free(void *p) { cfd_free(p); }
 

@@ -2,6 +2,7 @@
 #include "../../../platform/platform.h"
 #include "../../../utils/path.h"
 #include "../../../utils/mem.h"
+#include "../../../utils/str_utils.h"
 #include <stdio.h>
 #include <stdlib.h>
 int cmd_exec(cfd_session_t *sess, int argc, char **argv) {

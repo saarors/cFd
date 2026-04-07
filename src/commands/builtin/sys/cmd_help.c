@@ -2,6 +2,7 @@
 #include "../../../commands/registry.h"
 #include "../../../ui/color.h"
 #include "../../../ui/theme.h"
+#include "../../../utils/mem.h"
 #include <stdio.h>
 #include <string.h>
 

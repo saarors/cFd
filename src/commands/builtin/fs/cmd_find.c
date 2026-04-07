@@ -1,10 +1,13 @@
 #include "cmd_find.h"
 #include <stdio.h>
 #include <string.h>
-#include <fnmatch.h>
+#ifndef _WIN32
+#  include <fnmatch.h>
+#endif
 
 #ifdef _WIN32
 #  include <windows.h>
+#  include <shlwapi.h>
 #  ifndef FNM_CASEFOLD
 #    define FNM_CASEFOLD 0
 #  endif
