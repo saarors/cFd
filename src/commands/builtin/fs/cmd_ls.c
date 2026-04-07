@@ -74,7 +74,8 @@ int cmd_ls(cfd_session_t *sess, int argc, char **argv) {
         else if (argv[i][0] != '-') dir = argv[i];
     }
 
-    entry_t entries[4096];
+    entry_t *entries = (entry_t *)malloc(4096 * sizeof(entry_t));
+    if (!entries) return 1;
     int count = 0;
 
 #ifdef _WIN32
@@ -82,7 +83,7 @@ int cmd_ls(cfd_session_t *sess, int argc, char **argv) {
     snprintf(pattern, sizeof(pattern), "%s\\*", dir);
     WIN32_FIND_DATAA fd;
     HANDLE h = FindFirstFileA(pattern, &fd);
-    if (h == INVALID_HANDLE_VALUE) { perror(dir); return 1; }
+    if (h == INVALID_HANDLE_VALUE) { perror(dir); free(entries); return 1; }
     do {
         if (!all && fd.cFileName[0] == '.') continue;
         if (count >= 4096) break;
@@ -102,7 +103,7 @@ int cmd_ls(cfd_session_t *sess, int argc, char **argv) {
     FindClose(h);
 #else
     DIR *d = opendir(dir);
-    if (!d) { perror(dir); return 1; }
+    if (!d) { perror(dir); free(entries); return 1; }
     struct dirent *ent;
     while ((ent = readdir(d)) && count < 4096) {
         if (!all && ent->d_name[0] == '.') continue;
@@ -129,6 +130,7 @@ int cmd_ls(cfd_session_t *sess, int argc, char **argv) {
         if (!long_fmt && (i + 1) % 5 == 0) printf("\n");
     }
     if (!long_fmt && count % 5 != 0) printf("\n");
+    free(entries);
     return 0;
 }
 
