@@ -1,0 +1,46 @@
+# ── Compiled output ─────────────────────────────────────────────────
+cfd
+cfd.exe
+cfd_tests
+cfd_tests.exe
+*.o
+*.a
+*.so
+*.dll
+*.lib
+*.exp
+*.pdb
+
+# ── Build directory (binaries, installers, WiX tools) ───────────────
+build/
+
+# ── macOS ────────────────────────────────────────────────────────────
+.DS_Store
+*.DS_Store
+__MACOSX/
+*.app/
+
+# ── Windows ──────────────────────────────────────────────────────────
+Thumbs.db
+ehthumbs.db
+desktop.ini
+$RECYCLE.BIN/
+
+# ── Editors ──────────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+*.orig
+
+# ── Claude internal ──────────────────────────────────────────────────
+.claude/
+
+# ── Misc ─────────────────────────────────────────────────────────────
+*.log
+*.tmp
+*.bak
+cfd_pipe_*.tmp
+~/.cfd_history
+~/.cfdrc

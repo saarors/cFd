@@ -1,14 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!--
-  cFd Windows MSI Installer — WiX Toolset v3
-  Build:
-    candle cfd.wxs -o build\cfd.wixobj
-    light  build\cfd.wixobj -ext WixUIExtension -o build\cfd-1.0.0.msi
-  Or just run:  make installer-win
--->
 <Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
 
-  <!-- ── Product ──────────────────────────────────────────────────────── -->
   <Product
     Id="*"
     Name="cFd Terminal"
@@ -24,98 +16,55 @@
       Description="cFd — A custom terminal shell written in C"
       Comments="No bash. No PowerShell. No wrappers. Just C." />
 
-    <!-- Allow upgrades, block downgrades -->
-    <MajorUpgrade
-      DowngradeErrorMessage="A newer version of cFd is already installed." />
-
-    <!-- Single-file cabinet embedded in MSI -->
+    <MajorUpgrade DowngradeErrorMessage="A newer version of cFd is already installed." />
     <MediaTemplate EmbedCab="yes" />
 
-    <!-- ── UI ──────────────────────────────────────────────────────────── -->
+    <!-- Simple install-dir UI (no license page so no RTF needed) -->
     <Property Id="WIXUI_INSTALLDIR" Value="INSTALLFOLDER" />
     <UIRef Id="WixUI_InstallDir" />
-
-    <!-- Accept license without showing EULA dialog (minimal) -->
     <WixVariable Id="WixUILicenseRtf" Value="license.rtf" />
-    <Property Id="WIXUI_EXITDIALOGOPTIONALTEXT"
-              Value="cFd has been installed. Open a new terminal and type: cfd" />
 
-    <!-- ── Directories ────────────────────────────────────────────────── -->
+    <!-- ── Directories ── -->
     <Directory Id="TARGETDIR" Name="SourceDir">
-
       <Directory Id="ProgramFiles64Folder">
-        <Directory Id="INSTALLFOLDER" Name="cFd">
-          <!-- cfd.exe lives here -->
-        </Directory>
+        <Directory Id="INSTALLFOLDER" Name="cFd" />
       </Directory>
-
       <Directory Id="ProgramMenuFolder">
-        <Directory Id="ApplicationProgramsFolder" Name="cFd Terminal" />
+        <Directory Id="AppMenuFolder" Name="cFd Terminal" />
       </Directory>
-
     </Directory>
 
-    <!-- ── Features ──────────────────────────────────────────────────── -->
+    <!-- ── Features ── -->
     <Feature Id="ProductFeature" Title="cFd Terminal" Level="1">
-      <ComponentGroupRef Id="ProductComponents" />
-      <ComponentGroupRef Id="ShortcutComponents" />
-      <ComponentRef Id="RegistryComponent" />
-      <ComponentRef Id="PathComponent" />
+      <ComponentGroupRef Id="MainComponents" />
+      <ComponentRef Id="ShortcutComp" />
+      <ComponentRef Id="PathComp" />
     </Feature>
 
-    <!-- ── Components ─────────────────────────────────────────────────── -->
-    <ComponentGroup Id="ProductComponents" Directory="INSTALLFOLDER">
-
-      <!-- Main executable -->
-      <Component Id="MainExecutable" Guid="B1D4A3F2-77CC-4E8B-A012-ABCDEF012345">
-        <File Id="cfd_exe"
-              Source="..\..\cfd.exe"
-              Name="cfd.exe"
-              KeyPath="yes" />
-      </Component>
-
-    </ComponentGroup>
-
-    <!-- Start Menu shortcut -->
-    <ComponentGroup Id="ShortcutComponents" Directory="ApplicationProgramsFolder">
-      <Component Id="AppShortcut" Guid="C2E5B4A3-88DD-4F9C-B123-BCDEF1234567">
-        <Shortcut Id="ApplicationStartMenuShortcut"
-                  Name="cFd Terminal"
-                  Description="cFd — A custom terminal shell"
-                  Target="[INSTALLFOLDER]cfd.exe"
-                  WorkingDirectory="INSTALLFOLDER" />
-        <RemoveFolder Id="CleanUpShortCut" Directory="ApplicationProgramsFolder" On="uninstall" />
-        <RegistryValue Root="HKCU"
-                       Key="Software\cFd"
-                       Name="installed"
-                       Type="integer"
-                       Value="1"
-                       KeyPath="yes" />
+    <!-- ── Main executable ── -->
+    <ComponentGroup Id="MainComponents" Directory="INSTALLFOLDER">
+      <Component Id="MainExe" Guid="B1D4A3F2-77CC-4E8B-A012-ABCDEF012345" Win64="yes">
+        <File Id="cfd_exe" Source="..\..\cfd.exe" Name="cfd.exe" KeyPath="yes" />
       </Component>
     </ComponentGroup>
 
-    <!-- Registry entry -->
-    <Component Id="RegistryComponent"
-               Guid="D3F6C5B4-99EE-4A0D-C234-CDEF12345678"
-               Directory="INSTALLFOLDER">
-      <RegistryKey Root="HKLM" Key="SOFTWARE\cFd">
-        <RegistryValue Name="InstallDir" Type="string" Value="[INSTALLFOLDER]" KeyPath="yes" />
-        <RegistryValue Name="Version"    Type="string" Value="1.0.0" />
-      </RegistryKey>
+    <!-- ── Start Menu shortcut ── -->
+    <Component Id="ShortcutComp" Guid="C2E5B4A3-88DD-4F9C-B123-BCDEF1234567"
+               Directory="AppMenuFolder">
+      <Shortcut Id="StartMenuShortcut" Name="cFd Terminal"
+                Description="cFd — A custom terminal shell"
+                Target="[INSTALLFOLDER]cfd.exe"
+                WorkingDirectory="INSTALLFOLDER" />
+      <RemoveFolder Id="RemoveAppMenu" Directory="AppMenuFolder" On="uninstall" />
+      <RegistryValue Root="HKCU" Key="Software\cFd"
+                     Name="installed" Type="integer" Value="1" KeyPath="yes" />
     </Component>
 
-    <!-- PATH environment variable -->
-    <Component Id="PathComponent"
-               Guid="E4A7D6C5-A0FF-4B1E-D345-DEF123456789"
-               Directory="INSTALLFOLDER"
-               KeyPath="yes">
-      <Environment Id="PATH"
-                   Name="PATH"
-                   Value="[INSTALLFOLDER]"
-                   Permanent="no"
-                   Part="last"
-                   Action="set"
-                   System="yes" />
+    <!-- ── Add install dir to system PATH ── -->
+    <Component Id="PathComp" Guid="E4A7D6C5-A0FF-4B1E-D345-DEF123456789"
+               Directory="INSTALLFOLDER" KeyPath="yes" Win64="yes">
+      <Environment Id="SystemPATH" Name="PATH" Value="[INSTALLFOLDER]"
+                   Permanent="no" Part="last" Action="set" System="yes" />
     </Component>
 
   </Product>
