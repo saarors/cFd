@@ -1,3 +1,9 @@
+#ifndef _GNU_SOURCE
+#  define _GNU_SOURCE
+#endif
+#ifndef _USE_MATH_DEFINES
+#  define _USE_MATH_DEFINES
+#endif
 #include "cmd_calc.h"
 #include "../../../utils/mem.h"
 #include <stdio.h>
@@ -6,6 +12,13 @@
 #include <math.h>
 #include <ctype.h>
 #include <stdbool.h>
+/* Fallback for M_PI / M_E on strict C11 targets */
+#ifndef M_PI
+#  define M_PI  3.14159265358979323846
+#endif
+#ifndef M_E
+#  define M_E   2.71828182845904523536
+#endif
 
 /* ---- Recursive descent parser for math expressions ---- */
 
