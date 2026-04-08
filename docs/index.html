@@ -501,24 +501,35 @@
     <p style="color:var(--muted); margin:.5rem 0 0">Pick your platform and get running in seconds.</p>
     <div class="download-grid">
 
-      <!-- Windows -->
+      <!-- Windows MSI -->
       <div class="dl-card win">
         <div class="dl-icon">🪟</div>
-        <div class="dl-platform">Windows</div>
-        <div class="dl-file">cFd-1.0.0-windows.msi</div>
-        <div class="dl-size">~660 KB &middot; Windows 10/11 x64</div>
-        <a href="https://github.com/saarors/cFd/releases/download/v1.0.0/cFd-1.0.0-windows.msi"
+        <div class="dl-platform">Windows <span style="font-size:.75rem;color:var(--muted);font-weight:400;">MSI</span></div>
+        <div class="dl-file">cFd-v1.0.0-windows.msi</div>
+        <div class="dl-size">Windows 10/11 x64</div>
+        <a href="https://github.com/saarors/cFd/releases/download/v1.0.0/cFd-v1.0.0-windows.msi"
            class="dl-btn dl-btn-win" target="_blank">⬇ Download .msi</a>
-        <div class="dl-note">MSI installer &mdash; adds <code>cfd</code> to PATH automatically</div>
+        <div class="dl-note">Silent MSI &mdash; adds <code>cfd</code> to PATH automatically</div>
+      </div>
+
+      <!-- Windows Setup EXE -->
+      <div class="dl-card win">
+        <div class="dl-icon">🪟</div>
+        <div class="dl-platform">Windows <span style="font-size:.75rem;color:var(--muted);font-weight:400;">Setup</span></div>
+        <div class="dl-file">cFd-v1.0.0-setup.exe</div>
+        <div class="dl-size">Windows 10/11 x64</div>
+        <a href="https://github.com/saarors/cFd/releases/download/v1.0.0/cFd-v1.0.0-setup.exe"
+           class="dl-btn dl-btn-win" target="_blank">⬇ Download .exe</a>
+        <div class="dl-note">Classic wizard &mdash; Start Menu &amp; desktop shortcut</div>
       </div>
 
       <!-- macOS -->
       <div class="dl-card mac">
         <div class="dl-icon"></div>
         <div class="dl-platform">macOS</div>
-        <div class="dl-file">cFd-1.0.0-macos.dmg</div>
+        <div class="dl-file">cFd-v1.0.0-macos.dmg</div>
         <div class="dl-size">macOS 10.13+ &middot; Intel &amp; Apple Silicon</div>
-        <a href="https://github.com/saarors/cFd/releases/download/v1.0.0/cFd-1.0.0-macos.dmg"
+        <a href="https://github.com/saarors/cFd/releases/download/v1.0.0/cFd-v1.0.0-macos.dmg"
            class="dl-btn dl-btn-mac" target="_blank">⬇ Download .dmg</a>
         <div class="dl-note">Drag cFd.app to /Applications</div>
       </div>
@@ -527,9 +538,9 @@
       <div class="dl-card linux">
         <div class="dl-icon">🐧</div>
         <div class="dl-platform">Linux</div>
-        <div class="dl-file">cFd-1.0.0-linux-x86_64.tar.gz</div>
+        <div class="dl-file">cFd-v1.0.0-linux-x86_64.tar.gz</div>
         <div class="dl-size">x86_64 &middot; any distro</div>
-        <a href="https://github.com/saarors/cFd/releases/download/v1.0.0/cFd-1.0.0-linux-x86_64.tar.gz"
+        <a href="https://github.com/saarors/cFd/releases/download/v1.0.0/cFd-v1.0.0-linux-x86_64.tar.gz"
            class="dl-btn dl-btn-linux" target="_blank">⬇ Download .tar.gz</a>
         <div class="dl-note"><code>chmod +x cfd &amp;&amp; ./cfd</code></div>
       </div>
