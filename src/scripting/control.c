@@ -35,7 +35,12 @@ static char **expand_glob_pattern(const char *pattern, int *count) {
 
 #ifndef _WIN32
     glob_t g;
-    if (glob(pattern, GLOB_TILDE | GLOB_NOCHECK, NULL, &g) == 0) {
+#ifdef GLOB_TILDE
+    int glob_flags = GLOB_TILDE | GLOB_NOCHECK;
+#else
+    int glob_flags = GLOB_NOCHECK;
+#endif
+    if (glob(pattern, glob_flags, NULL, &g) == 0) {
         char **r = cfd_malloc(g.gl_pathc * sizeof(char *));
         for (size_t i = 0; i < g.gl_pathc; i++)
             r[i] = cfd_strdup(g.gl_pathv[i]);
