@@ -18,7 +18,10 @@
 ;--- Compression & output ----------------------------------------------------
 SetCompressor     /SOLID lzma
 SetCompressorDictSize 32
-OutFile           "..\..\build\cfd-setup-${APP_VERSION}.exe"
+!ifndef OUTFILE
+  !define OUTFILE "..\..\build\cfd-setup-${APP_VERSION}.exe"
+!endif
+OutFile           "${OUTFILE}"
 InstallDir        "${INSTALL_DIR}"
 InstallDirRegKey  HKLM "${REG_KEY}" "InstallLocation"
 RequestExecutionLevel admin
@@ -28,8 +31,6 @@ RequestExecutionLevel admin
 !include "EnvVarUpdate.nsh"   ; for PATH manipulation
 
 !define MUI_ABORTWARNING
-!define MUI_ICON              "cfd.ico"
-!define MUI_UNICON             "cfd.ico"
 !define MUI_WELCOMEPAGE_TITLE  "cFd Terminal ${APP_VERSION}"
 !define MUI_WELCOMEPAGE_TEXT   "cFd is a fully custom terminal shell written in C.$\r$\n$\r$\nNo bash. No PowerShell. No wrappers. Just C.$\r$\n$\r$\nThis wizard will install cFd on your computer."
 !define MUI_FINISHPAGE_RUN     "$INSTDIR\cfd.exe"
@@ -48,15 +49,6 @@ RequestExecutionLevel admin
 
 !insertmacro MUI_LANGUAGE "English"
 
-;--- Version info shown in Explorer ------------------------------------------
-VIProductVersion              "${APP_VERSION}.0"
-VIAddVersionKey "ProductName"      "${APP_NAME}"
-VIAddVersionKey "ProductVersion"   "${APP_VERSION}"
-VIAddVersionKey "CompanyName"      "${APP_PUBLISHER}"
-VIAddVersionKey "FileDescription"  "${APP_DESCRIPTION}"
-VIAddVersionKey "FileVersion"      "${APP_VERSION}"
-VIAddVersionKey "LegalCopyright"   "MIT License"
-
 ;--- Install -----------------------------------------------------------------
 Section "cFd Terminal (required)" SEC_MAIN
   SectionIn RO   ; can't deselect
@@ -72,13 +64,12 @@ Section "cFd Terminal (required)" SEC_MAIN
   ; Start Menu shortcut
   CreateDirectory "$SMPROGRAMS\cFd Terminal"
   CreateShortcut  "$SMPROGRAMS\cFd Terminal\cFd Terminal.lnk" \
-                  "$INSTDIR\cfd.exe" "" "$INSTDIR\cfd.exe" 0
+                  "$INSTDIR\cfd.exe"
   CreateShortcut  "$SMPROGRAMS\cFd Terminal\Uninstall cFd.lnk" \
                   "$INSTDIR\Uninstall.exe"
 
-  ; Desktop shortcut (optional — user can delete it)
-  CreateShortcut  "$DESKTOP\cFd Terminal.lnk" \
-                  "$INSTDIR\cfd.exe" "" "$INSTDIR\cfd.exe" 0
+  ; Desktop shortcut
+  CreateShortcut  "$DESKTOP\cFd Terminal.lnk" "$INSTDIR\cfd.exe"
 
   ; Write uninstaller
   WriteUninstaller "$INSTDIR\Uninstall.exe"
@@ -92,11 +83,6 @@ Section "cFd Terminal (required)" SEC_MAIN
   WriteRegStr   HKLM "${REG_KEY}" "UninstallString"  "$INSTDIR\Uninstall.exe"
   WriteRegDWORD HKLM "${REG_KEY}" "NoModify"         1
   WriteRegDWORD HKLM "${REG_KEY}" "NoRepair"         1
-
-  ; Estimate install size (KB)
-  ${GetSize} "$INSTDIR" "/S=0K" $0 $1 $2
-  IntFmt $0 "0x%08X" $0
-  WriteRegDWORD HKLM "${REG_KEY}" "EstimatedSize" "$0"
 
 SectionEnd
 

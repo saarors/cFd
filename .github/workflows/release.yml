@@ -83,8 +83,10 @@ jobs:
         run: |
           mkdir build 2>NUL
           makensis /DAPP_VERSION=${{ github.ref_name }} ^
-                   /DOUTFILE="build\cFd-${{ github.ref_name }}-setup.exe" ^
                    installer\windows\cfd.nsi
+          if exist build\cfd-setup-*.exe (
+            ren build\cfd-setup-*.exe "cFd-${{ github.ref_name }}-setup.exe"
+          )
 
       - name: Upload Windows artifacts
         uses: actions/upload-artifact@v4
