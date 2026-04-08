@@ -6,7 +6,9 @@
 ;--- General -----------------------------------------------------------------
 !define APP_NAME        "cFd Terminal"
 !define APP_EXE         "cfd.exe"
-!define APP_VERSION     "1.0.0"
+!ifndef APP_VERSION
+  !define APP_VERSION   "1.0.0"
+!endif
 !define APP_PUBLISHER   "saarors"
 !define APP_URL         "https://github.com/saarors/cFd"
 !define APP_DESCRIPTION "A custom terminal shell written in C"
