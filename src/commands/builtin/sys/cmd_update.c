@@ -64,9 +64,11 @@ static void cache_path(char *out, size_t size) {
 /* ── Version comparison ──────────────────────────────────────────────────── */
 
 static void parse_ver(const char *s, int *maj, int *min, int *pat) {
-    if (s && *s == 'v') s++;
     *maj = *min = *pat = 0;
-    if (s) sscanf(s, "%d.%d.%d", maj, min, pat);
+    if (!s) return;
+    /* Scan forward to the first digit — handles "v1.2.3", "2.0.0", "laster-v3.0.0" */
+    while (*s && !(*s >= '0' && *s <= '9')) s++;
+    sscanf(s, "%d.%d.%d", maj, min, pat);
 }
 
 static bool version_newer_than_current(const char *remote_tag) {
