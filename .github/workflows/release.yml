@@ -57,9 +57,7 @@ jobs:
       - name: Install NSIS
         shell: pwsh
         run: |
-          $url = "https://nsis.sourceforge.io/mediawiki/images/c/c9/Nsis-3.09-setup.exe"
-          Invoke-WebRequest $url -OutFile nsis_setup.exe
-          Start-Process nsis_setup.exe -ArgumentList "/S" -Wait
+          choco install nsis --yes --no-progress
           echo "C:\Program Files (x86)\NSIS" | `
             Out-File -Append -FilePath $env:GITHUB_PATH
 
