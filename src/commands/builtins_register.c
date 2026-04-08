@@ -83,6 +83,8 @@
 #include "builtin/fs/cmd_chmod.h"
 /* --- new process --- */
 #include "builtin/process/cmd_wait.h"
+/* --- update --- */
+#include "builtin/sys/cmd_update.h"
 
 void cfd_register_all_builtins(cfd_registry_t *reg) {
     /* filesystem */
@@ -169,4 +171,6 @@ void cfd_register_all_builtins(cfd_registry_t *reg) {
     cfd_registry_register(reg, &builtin_calc);
     cfd_registry_register(reg, &builtin_seq);
     cfd_registry_register(reg, &builtin_expr);
+    /* update */
+    cfd_registry_register(reg, &builtin_update);
 }

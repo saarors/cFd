@@ -4,6 +4,7 @@
 #include "../ui/display.h"
 #include "../utils/mem.h"
 #include "../utils/str_utils.h"
+#include "../commands/builtin/sys/cmd_update.h"
 #include <stdio.h>
 #include <string.h>
 #include <time.h>
@@ -143,6 +144,9 @@ int cfd_repl_eval(cfd_repl_t *repl, const char *line) {
 }
 
 int cfd_repl_run(cfd_repl_t *repl) {
+    /* Check for updates in the background on startup */
+    cfd_update_notify_startup();
+
     while (repl->sess->running) {
         /* Build prompt */
         char *prompt = cfd_prompt_build(repl->sess);

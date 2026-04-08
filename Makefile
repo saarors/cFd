@@ -130,6 +130,7 @@ SRC_COMMANDS = \
   src/commands/builtin/sys/cmd_uptime.c \
   src/commands/builtin/sys/cmd_watch.c \
   src/commands/builtin/sys/cmd_test_cmd.c \
+  src/commands/builtin/sys/cmd_update.c \
   src/commands/builtin/process/cmd_exec.c \
   src/commands/builtin/process/cmd_ps.c \
   src/commands/builtin/process/cmd_kill.c \
