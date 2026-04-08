@@ -139,7 +139,7 @@ cfd_token_t *cfd_lexer_next(cfd_lexer_t *lex) {
         return tok;
     }
 
-    /* word / assignment */
+    /* word / keyword / assignment */
     {
         char *w = read_word(lex);
         /* check for assignment: key=value */
@@ -148,6 +148,29 @@ cfd_token_t *cfd_lexer_next(cfd_lexer_t *lex) {
             cfd_token_t *tok = cfd_token_new(TOK_ASSIGN, w, line, col);
             cfd_free(w);
             return tok;
+        }
+        /* check keywords */
+        static const struct { const char *kw; cfd_token_type_t type; } kwtab[] = {
+            {"for",      TOK_KW_FOR},
+            {"in",       TOK_KW_IN},
+            {"do",       TOK_KW_DO},
+            {"done",     TOK_KW_DONE},
+            {"if",       TOK_KW_IF},
+            {"then",     TOK_KW_THEN},
+            {"elif",     TOK_KW_ELIF},
+            {"else",     TOK_KW_ELSE},
+            {"fi",       TOK_KW_FI},
+            {"while",    TOK_KW_WHILE},
+            {"until",    TOK_KW_UNTIL},
+            {"function", TOK_KW_FUNCTION},
+            {NULL, TOK_WORD}
+        };
+        for (int ki = 0; kwtab[ki].kw; ki++) {
+            if (strcmp(w, kwtab[ki].kw) == 0) {
+                cfd_token_t *tok = cfd_token_new(kwtab[ki].type, w, line, col);
+                cfd_free(w);
+                return tok;
+            }
         }
         /* check numeric */
         bool is_num = true;

@@ -7,6 +7,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <time.h>
+#include <ctype.h>
 
 /* ── Multiline continuation detection ────────────────────────────────── */
 
@@ -17,6 +18,42 @@
  *  - line ends with '|', '&&', '||'
  *  - unmatched '{' '(' '['
  */
+/* Count occurrences of a whole word in a shell line (skips quoted regions) */
+static int count_whole_word(const char *line, const char *word) {
+    int count  = 0;
+    int in_sq  = 0, in_dq = 0;
+    size_t wlen = strlen(word);
+    for (const char *p = line; *p; p++) {
+        if (in_sq)  { if (*p == '\'') in_sq = 0; continue; }
+        if (in_dq)  { if (*p == '\\' && p[1]) { p++; continue; }
+                      if (*p == '"') in_dq = 0; else continue; }
+        if (*p == '\'') { in_sq = 1; continue; }
+        if (*p == '"')  { in_dq = 1; continue; }
+        if (*p == '#')  break;
+        if (strncmp(p, word, wlen) == 0) {
+            int before_ok = (p == line || (!isalnum((unsigned char)p[-1]) && p[-1] != '_'));
+            int after_ok  = (!isalnum((unsigned char)p[wlen]) && p[wlen] != '_');
+            if (before_ok && after_ok) { count++; p += wlen - 1; }
+        }
+    }
+    return count;
+}
+
+/* Returns true if the line ends with the given whole word */
+static int ends_with_word(const char *line, const char *word) {
+    size_t llen = strlen(line), wlen = strlen(word);
+    if (llen < wlen) return 0;
+    const char *tail = line + llen - wlen;
+    /* skip trailing whitespace */
+    const char *end = line + llen - 1;
+    while (end >= line && (*end == ' ' || *end == '\t' || *end == '\r')) end--;
+    if ((size_t)(end - line + 1) < wlen) return 0;
+    tail = end - wlen + 1;
+    if (strncmp(tail, word, wlen) != 0) return 0;
+    int before_ok = (tail == line || (!isalnum((unsigned char)tail[-1]) && tail[-1] != '_'));
+    return before_ok;
+}
+
 static int needs_more_input(const char *line) {
     if (!line || !*line) return 0;
 
@@ -54,7 +91,7 @@ static int needs_more_input(const char *line) {
         }
         if (c == '\'') { in_single = 1; continue; }
         if (c == '"')  { in_double = 1; continue; }
-        if (c == '#')  break; /* comment */
+        if (c == '#')  break;
         if (c == '{')  braces++;
         else if (c == '}') braces--;
         else if (c == '(') parens++;
@@ -63,6 +100,21 @@ static int needs_more_input(const char *line) {
         else if (c == ']') brackets--;
     }
     if (braces > 0 || parens > 0 || brackets > 0) return 1;
+
+    /* Unmatched keyword blocks: for/while/if vs done/fi */
+    int opens  = count_whole_word(line, "for")
+               + count_whole_word(line, "while")
+               + count_whole_word(line, "until")
+               + count_whole_word(line, "if");
+    int closes = count_whole_word(line, "done")
+               + count_whole_word(line, "fi");
+    if (opens > closes) return 1;
+
+    /* Ends with a keyword that expects a body to follow */
+    if (ends_with_word(line, "do"))   return 1;
+    if (ends_with_word(line, "then")) return 1;
+    if (ends_with_word(line, "else")) return 1;
+    if (ends_with_word(line, "elif")) return 1;
 
     return 0;
 }

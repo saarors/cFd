@@ -26,8 +26,26 @@ typedef enum {
     TOK_RBRACE,         /* } */
     TOK_NEWLINE,
     TOK_EOF,
-    TOK_ERROR
+    TOK_ERROR,
+    /* ── Shell keywords ────────────────────────────────────────────────── */
+    TOK_KW_FOR,         /* for   */
+    TOK_KW_IN,          /* in    */
+    TOK_KW_DO,          /* do    */
+    TOK_KW_DONE,        /* done  */
+    TOK_KW_IF,          /* if    */
+    TOK_KW_THEN,        /* then  */
+    TOK_KW_ELIF,        /* elif  */
+    TOK_KW_ELSE,        /* else  */
+    TOK_KW_FI,          /* fi    */
+    TOK_KW_WHILE,       /* while */
+    TOK_KW_UNTIL,       /* until */
+    TOK_KW_FUNCTION     /* function */
 } cfd_token_type_t;
+
+/* Returns true if tok is a shell keyword */
+static inline int tok_is_keyword(cfd_token_type_t t) {
+    return t >= TOK_KW_FOR && t <= TOK_KW_FUNCTION;
+}
 
 typedef struct cfd_token {
     cfd_token_type_t type;
